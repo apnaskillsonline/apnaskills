@@ -1,65 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>ApnaSkills</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApnaSkills - Find Your Perfect Tutor</title>
+    <link rel="stylesheet" href="style  .css">
 </head>
-
 <body>
-
-  <!-- AUTH / LANDING -->
-  <section id="authScreen" class="auth-screen">
-    <div class="auth-card">
-      <h1 class="brand">ApnaSkills</h1>
-      <p class="tagline">
-        Learn from trusted tutors near you.<br />
-        Skill up. Book smart. Grow faster.
-      </p>
-
-      <button id="loginBtn" class="google-btn">
-        <img src="https://www.svgrepo.com/show/475656/google-color.svg" />
-        Continue with Google
-      </button>
-
-      <div class="why">
-        <h3>Why ApnaSkills?</h3>
-        <ul>
-          <li>✔ Verified local tutors</li>
-          <li>✔ Transparent pricing</li>
-          <li>✔ Flexible scheduling</li>
-          <li>✔ Secure bookings</li>
-        </ul>
-      </div>
+    <!-- ==================== LOGIN PAGE ==================== -->
+    <div id="loginPage">
+        <div class="login-container">
+            <div class="logo">ApnaSkills</div>
+            <p class="login-subtitle">Find the perfect tutor for your learning journey</p>
+            <button id="googleLoginBtn" class="btn btn-google">
+                <span>🔐</span> Sign in with Google
+            </button>
+        </div>
     </div>
-  </section>
 
-  <!-- APP -->
-  <div id="app" class="hidden">
-    <header class="top-bar">
-      <h2 class="logo">ApnaSkills</h2>
+    <!-- ==================== MAIN APP (Hidden until logged in) ==================== -->
+    <div id="mainApp" class="hidden">
+        <!-- ==================== HEADER ==================== -->
+        <header>
+            <nav>
+                <div class="nav-brand">ApnaSkills</div>
+                <div class="nav-menu">
+                    <a href="#" class="nav-link active" data-page="home">Home</a>
+                    <a href="#" class="nav-link" data-page="bookings">My Bookings</a>
+                    <a href="#" class="nav-link" data-page="notifications" style="position: relative;">
+                        Notifications
+                        <span id="notificationBadge" class="notification-badge hidden">0</span>
+                    </a>
+                    <div class="user-profile" id="userProfile">
+                        <img id="userAvatar" class="user-avatar" src="" alt="User">
+                        <span id="userName"></span>
+                    </div>
+                    <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+                </div>
+            </nav>
+        </header>
 
-      <div class="user-info">
-        <img id="userPhoto" />
-        <span id="userName"></span>
-        <button id="logoutBtn">Logout</button>
-      </div>
-    </header>
+        <!-- ==================== HOME PAGE ==================== -->
+        <div id="homePage" class="page-content">
+            <!-- Hero Section -->
+            <div class="hero-section">
+                <div class="container">
+                    <h1 class="hero-title">Learn Anything, Anytime, Anywhere</h1>
+                    <p class="hero-subtitle">Connect with expert tutors for personalized learning experiences</p>
+                </div>
+            </div>
 
-    <div class="app-body">
-      <aside class="sidebar">
-        <button data-view="search">🔍 Search Tutors</button>
-        <button data-view="bookings">📚 My Bookings</button>
-        <button data-view="notifications">🔔 Notifications</button>
-        <button data-view="becomeTutor">🎓 Become a Tutor</button>
-        <button data-view="profile">👤 Profile</button>
-      </aside>
+            <!-- Search Section -->
+            <div class="container">
+                <div class="search-container">
+                    <form class="search-form" id="searchForm">
+                        <div class="input-group">
+                            <label for="locationInput">Location</label>
+                            <input type="text" id="locationInput" placeholder="Enter your city" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="specializationInput">Specialization</label>
+                            <select id="specializationInput" required>
+                                <option value="">Select subject</option>
+                                <option value="mathematics">Mathematics</option>
+                                <option value="physics">Physics</option>
+                                <option value="chemistry">Chemistry</option>
+                                <option value="biology">Biology</option>
+                                <option value="english">English</option>
+                                <option value="computer_science">Computer Science</option>
+                                <option value="programming">Programming</option>
+                                <option value="data_science">Data Science</option>
+                                <option value="music">Music</option>
+                                <option value="art">Art</option>
+                                <option value="languages">Foreign Languages</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="align-self: flex-end;">Search</button>
+                    </form>
+                </div>
 
-      <main id="viewContainer"></main>
+                <!-- Become Tutor Banner -->
+                <div class="become-tutor-banner" id="becomeTutorBanner">
+                    <h2>Share Your Knowledge</h2>
+                    <p>Join our community of expert tutors and help students achieve their goals</p>
+                    <button class="btn btn-primary" id="becomeTutorBtn">Become a Tutor</button>
+                </div>
+
+                <!-- Why ApnaSkills Section -->
+                <div class="why-section">
+                    <h2 class="section-title">Why Choose ApnaSkills?</h2>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">🎯</div>
+                            <h3 class="feature-title">Verified Tutors</h3>
+                            <p class="feature-desc">All our tutors are verified professionals with proven expertise and certifications</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">💰</div>
+                            <h3 class="feature-title">Flexible Pricing</h3>
+                            <p class="feature-desc">Choose tutors that fit your budget with transparent hourly rates</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">📅</div>
+                            <h3 class="feature-title">Easy Scheduling</h3>
+                            <p class="feature-desc">Book sessions at your convenience with our simple booking system</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">⭐</div>
+                            <h3 class="feature-title">Rated & Reviewed</h3>
+                            <p class="feature-desc">Make informed decisions with ratings and reviews from real students</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🏠</div>
+                            <h3 class="feature-title">Learn From Home</h3>
+                            <p class="feature-desc">Connect with tutors online or schedule in-person sessions in your area</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🔒</div>
+                            <h3 class="feature-title">Secure & Private</h3>
+                            <p class="feature-desc">Your information is protected with enterprise-grade security</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suggested Tutors -->
+                <div class="tutors-section">
+                    <h2 class="section-title">Featured Tutors</h2>
+                    <div class="tutors-grid" id="tutorsGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== BOOKINGS PAGE ==================== -->
+        <div id="bookingsPage" class="page-content hidden">
+            <div class="page-section">
+                <div class="bookings-container">
+                    <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">My Bookings</h2>
+                    <div class="bookings-tabs">
+                        <button class="tab-btn active" data-tab="current">Current Bookings</button>
+                        <button class="tab-btn" data-tab="past">Past Bookings</button>
+                    </div>
+                    <div id="currentBookings"></div>
+                    <div id="pastBookings" class="hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== NOTIFICATIONS PAGE ==================== -->
+        <div id="notificationsPage" class="page-content hidden">
+            <div class="page-section">
+                <div class="bookings-container">
+                    <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">Notifications</h2>
+                    <div id="notificationsList"></div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <script type="module" src="app.js"></script>
+    <!-- Load JavaScript -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>
