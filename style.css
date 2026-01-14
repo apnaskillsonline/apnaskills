@@ -1,0 +1,153 @@
+:root {
+  --primary: #6366f1;
+  --secondary: #22c55e;
+  --bg: #0f172a;
+  --card: #111827;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: var(--text);
+}
+
+/* AUTH SCREEN */
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-card {
+  background: rgba(17, 24, 39, 0.9);
+  padding: 48px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+}
+
+.brand {
+  font-size: 2.4rem;
+  margin-bottom: 8px;
+  color: #a5b4fc;
+}
+
+.tagline {
+  color: var(--muted);
+  margin-bottom: 28px;
+}
+
+.google-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: white;
+  color: #111;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 32px;
+}
+
+.google-btn img {
+  width: 20px;
+}
+
+.why h3 {
+  margin-bottom: 12px;
+}
+
+.why ul {
+  list-style: none;
+  padding: 0;
+}
+
+.why li {
+  margin: 6px 0;
+  color: var(--muted);
+}
+
+/* APP */
+.hidden {
+  display: none;
+}
+
+.top-bar {
+  background: #020617;
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  color: #a5b4fc;
+  margin: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-info img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.user-info button {
+  background: transparent;
+  border: 1px solid #334155;
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.app-body {
+  display: flex;
+  min-height: calc(100vh - 60px);
+}
+
+.sidebar {
+  width: 240px;
+  background: #020617;
+  padding: 20px;
+}
+
+.sidebar button {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: #111827;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar button:hover {
+  background: #1f2937;
+}
+
+main {
+  flex: 1;
+  padding: 32px;
+}

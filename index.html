@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ApnaSkills</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- AUTH / LANDING -->
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <h1 class="brand">ApnaSkills</h1>
+      <p class="tagline">
+        Learn from trusted tutors near you.<br />
+        Skill up. Book smart. Grow faster.
+      </p>
+
+      <button id="loginBtn" class="google-btn">
+        <img src="https://www.svgrepo.com/show/475656/google-color.svg" />
+        Continue with Google
+      </button>
+
+      <div class="why">
+        <h3>Why ApnaSkills?</h3>
+        <ul>
+          <li>✔ Verified local tutors</li>
+          <li>✔ Transparent pricing</li>
+          <li>✔ Flexible scheduling</li>
+          <li>✔ Secure bookings</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <div id="app" class="hidden">
+    <header class="top-bar">
+      <h2 class="logo">ApnaSkills</h2>
+
+      <div class="user-info">
+        <img id="userPhoto" />
+        <span id="userName"></span>
+        <button id="logoutBtn">Logout</button>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <aside class="sidebar">
+        <button data-view="search">🔍 Search Tutors</button>
+        <button data-view="bookings">📚 My Bookings</button>
+        <button data-view="notifications">🔔 Notifications</button>
+        <button data-view="becomeTutor">🎓 Become a Tutor</button>
+        <button data-view="profile">👤 Profile</button>
+      </aside>
+
+      <main id="viewContainer"></main>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
