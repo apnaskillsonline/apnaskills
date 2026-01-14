@@ -1,4 +1,8 @@
+// -------------------------------
+// Firebase SDK imports (CDN ONLY)
+// -------------------------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+
 import {
   getAuth,
   GoogleAuthProvider,
@@ -14,9 +18,11 @@ import {
   get
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
-/* Firebase Config */
+// -------------------------------
+// Firebase configuration (CORRECT)
+// -------------------------------
 const firebaseConfig = {
-  apiKey: "AIzaSyBj8NFxNFxwd1PFXR37X4JcE9j4N9pJGnZ8A",
+  apiKey: "AIzaSyBj8NFx3wd1PFXR37X4JcE9j4N9pJGnZ8A",
   authDomain: "apnaskills-ef242.firebaseapp.com",
   databaseURL: "https://apnaskills-ef242-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "apnaskills-ef242",
@@ -25,12 +31,17 @@ const firebaseConfig = {
   appId: "1:120699280754:web:1aff20056bf990f67c11eb"
 };
 
+// -------------------------------
+// Initialize Firebase
+// -------------------------------
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 const provider = new GoogleAuthProvider();
 
-/* DOM */
+// -------------------------------
+// DOM references
+// -------------------------------
 const authScreen = document.getElementById("authScreen");
 const appUI = document.getElementById("app");
 const loginBtn = document.getElementById("loginBtn");
@@ -39,13 +50,28 @@ const userName = document.getElementById("userName");
 const userPhoto = document.getElementById("userPhoto");
 const viewContainer = document.getElementById("viewContainer");
 
-/* Login */
-loginBtn.onclick = () => signInWithPopup(auth, provider);
+// -------------------------------
+// Login with Google
+// -------------------------------
+loginBtn.addEventListener("click", async () => {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error("Google Login Error:", error);
+    alert(error.message);
+  }
+});
 
-/* Logout */
-logoutBtn.onclick = () => signOut(auth);
+// -------------------------------
+// Logout
+// -------------------------------
+logoutBtn.addEventListener("click", async () => {
+  await signOut(auth);
+});
 
-/* Auth State */
+// -------------------------------
+// Auth state observer
+// -------------------------------
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     authScreen.classList.remove("hidden");
@@ -53,16 +79,19 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  // Show app
   authScreen.classList.add("hidden");
   appUI.classList.remove("hidden");
 
+  // User UI
   userName.textContent = user.displayName;
   userPhoto.src = user.photoURL;
 
+  // Save user if first login
   const userRef = ref(db, `users/${user.uid}`);
-  const snap = await get(userRef);
+  const snapshot = await get(userRef);
 
-  if (!snap.exists()) {
+  if (!snapshot.exists()) {
     await set(userRef, {
       uid: user.uid,
       name: user.displayName,
@@ -72,22 +101,26 @@ onAuthStateChanged(auth, async (user) => {
       createdAt: Date.now()
     });
 
+    // Welcome notification
     await set(ref(db, `notifications/${user.uid}/${Date.now()}`), {
       message: "Welcome to ApnaSkills 👋",
-      read: false
+      read: false,
+      createdAt: Date.now()
     });
   }
 
   loadSearchView();
 });
 
-/* Default View */
+// -------------------------------
+// Default view after login
+// -------------------------------
 function loadSearchView() {
   viewContainer.innerHTML = `
     <h2>Search Tutors</h2>
     <p style="color:#9ca3af">
-      Find tutors by location and specialization.  
-      (Search UI comes in Phase 2)
+      Find tutors by location and specialization.<br>
+      (Tutor search UI comes next.)
     </p>
   `;
 }
