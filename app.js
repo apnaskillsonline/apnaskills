@@ -113,6 +113,13 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('userName').textContent = user.displayName;
         document.getElementById('userAvatar').src = user.photoURL;
         
+        // Update user role display
+        if (currentUserData.isTutor) {
+            document.getElementById('userRole').textContent = '👨‍🏫 Tutor';
+        } else {
+            document.getElementById('userRole').textContent = '👨‍🎓 Student';
+        }
+        
         // Load initial data
         await loadTutors();
         await loadNotifications();
@@ -121,7 +128,6 @@ onAuthStateChanged(auth, async (user) => {
         // Check if user is tutor and update UI
         if (currentUserData.isTutor) {
             document.getElementById('becomeTutorBanner').classList.add('hidden');
-            addTutorProfileLink();
         }
         
         // Check for pending rating popup on login
@@ -181,7 +187,147 @@ function navigateToPage(page) {
             document.getElementById('notificationsPage').classList.remove('hidden');
             markNotificationsAsRead();
             break;
+        case 'profile':
+            document.getElementById('profilePage').classList.remove('hidden');
+            loadProfile();
+            break;
     }
+}
+
+// ==================== LOAD PROFILE ====================
+
+async function loadProfile() {
+    const container = document.getElementById('profileContent');
+    
+    // Get user data
+    const userRef = ref(database, `users/${currentUser.uid}`);
+    const userSnapshot = await get(userRef);
+    const userData = userSnapshot.val();
+    
+    let profileHTML = `
+        <div style="background: var(--bg-secondary); padding: 32px; border-radius: var(--radius); margin-bottom: 24px;">
+            <div style="display: flex; gap: 24px; align-items: center; margin-bottom: 24px;">
+                <img src="${currentUser.photoURL}" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--primary);" onerror="this.src='https://via.placeholder.com/100?text=Avatar'">
+                <div>
+                    <h2 style="margin-bottom: 8px;">${currentUser.displayName}</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 4px;">📧 ${currentUser.email}</p>
+                    <span style="background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                        ${userData.isTutor ? '👨‍🏫 TUTOR' : '👨‍🎓 STUDENT'}
+                    </span>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                    <strong>User ID:</strong><br>
+                    <span style="color: var(--text-secondary); font-size: 12px; word-break: break-all;">${currentUser.uid}</span>
+                </div>
+                <div>
+                    <strong>Account Created:</strong><br>
+                    <span style="color: var(--text-secondary);">${new Date(userData.createdAt).toLocaleDateString()}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // If user is a tutor, show tutor details
+    if (userData.isTutor) {
+        const tutorRef = ref(database, `tutors/${currentUser.uid}`);
+        const tutorSnapshot = await get(tutorRef);
+        const tutorData = tutorSnapshot.val();
+        
+        if (tutorData) {
+            // Calculate ratings
+            let avgRating = 0;
+            let totalRatings = 0;
+            let ratingsHTML = '';
+            
+            if (tutorData.ratings) {
+                const ratings = Object.values(tutorData.ratings);
+                const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
+                avgRating = (sum / ratings.length).toFixed(1);
+                totalRatings = ratings.length;
+                
+                ratingsHTML = ratings.map(r => `
+                    <div style="background: white; padding: 16px; border-radius: 8px; margin-bottom: 12px; box-shadow: var(--shadow);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <div>
+                                <strong>${r.studentName}</strong>
+                                <div style="color: var(--warning); margin-top: 4px;">⭐ ${r.rating}/5</div>
+                            </div>
+                            <div style="color: var(--text-light); font-size: 12px;">${new Date(r.timestamp).toLocaleDateString()}</div>
+                        </div>
+                        ${r.review ? `<p style="color: var(--text-secondary); margin-top: 8px;">"${r.review}"</p>` : ''}
+                        <div style="margin-top: 8px; font-size: 12px;">
+                            ${r.showedUp ? '✅ Tutor showed up' : '❌ Tutor did not show up'}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                ratingsHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No ratings yet</p>';
+            }
+            
+            profileHTML += `
+                <div style="background: white; padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 20px; color: var(--primary);">📚 Tutor Information</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div>
+                            <strong>Specialization:</strong><br>
+                            <span style="color: var(--primary); font-size: 18px;">${tutorData.specialization}</span>
+                        </div>
+                        <div>
+                            <strong>Location:</strong><br>
+                            <span style="color: var(--text-secondary);">${tutorData.location}</span>
+                        </div>
+                        <div>
+                            <strong>Experience:</strong><br>
+                            <span style="color: var(--text-secondary);">${tutorData.experience} years</span>
+                        </div>
+                        <div>
+                            <strong>Age:</strong><br>
+                            <span style="color: var(--text-secondary);">${tutorData.age} years</span>
+                        </div>
+                        <div>
+                            <strong>Hourly Rate:</strong><br>
+                            <span style="color: var(--success); font-size: 18px; font-weight: 600;">₹${tutorData.hourlyRate}/hour</span>
+                        </div>
+                        <div>
+                            <strong>Mobile:</strong><br>
+                            <span style="color: var(--text-secondary);">${tutorData.mobile}</span>
+                        </div>
+                    </div>
+                    ${tutorData.certifications ? `
+                        <div style="margin-top: 20px;">
+                            <strong>Certifications:</strong><br>
+                            <p style="color: var(--text-secondary); margin-top: 8px; line-height: 1.6;">${tutorData.certifications}</p>
+                        </div>
+                    ` : ''}
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--bg-tertiary);">
+                        <strong>Overall Rating:</strong>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                            <span style="font-size: 32px; color: var(--warning);">⭐ ${avgRating}</span>
+                            <span style="color: var(--text-secondary);">(${totalRatings} reviews)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: white; padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow);">
+                    <h3 style="margin-bottom: 20px; color: var(--primary);">⭐ Reviews & Ratings</h3>
+                    ${ratingsHTML}
+                </div>
+            `;
+        }
+    } else {
+        profileHTML += `
+            <div style="background: linear-gradient(135deg, var(--secondary), var(--accent)); color: white; padding: 40px; border-radius: var(--radius); text-align: center;">
+                <h3 style="font-size: 24px; margin-bottom: 16px;">Want to become a tutor?</h3>
+                <p style="margin-bottom: 24px; opacity: 0.95;">Share your knowledge and earn by teaching students</p>
+                <button class="btn btn-primary" onclick="document.getElementById('becomeTutorBtn').click()">Register as Tutor</button>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = profileHTML;
 }
 
 // ==================== LOAD TUTORS ====================
@@ -395,6 +541,12 @@ document.getElementById('searchForm').addEventListener('submit', (e) => {
     // Hide suggestions
     locationSuggestions.classList.add('hidden');
     specializationSuggestions.classList.add('hidden');
+    
+    // Scroll to tutors section
+    const tutorsSection = document.querySelector('.tutors-section');
+    if (tutorsSection) {
+        tutorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 });
 
 // Clear search button
@@ -633,17 +785,23 @@ document.getElementById('becomeTutorBtn').addEventListener('click', () => {
                         </div>
                         <div class="form-group" style="position: relative;">
                             <label>Specialization *</label>
-                            <input type="text" id="tutorSpecialization" placeholder="Select or type your specialization" autocomplete="off" required list="specializationList">
+                            <input type="text" id="tutorSpecialization" placeholder="Select from list or type your own" autocomplete="off" required list="specializationList">
                             <datalist id="specializationList">
                                 ${specializationOptions}
                             </datalist>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                                💡 Type any subject if not in list (e.g., "Tabla", "Sanskrit", "Cooking")
+                            </small>
                         </div>
                         <div class="form-group" style="position: relative;">
                             <label>Location (City) *</label>
-                            <input type="text" id="tutorLocation" placeholder="Select or type your city" autocomplete="off" required list="cityList">
+                            <input type="text" id="tutorLocation" placeholder="Select from list or type your own" autocomplete="off" required list="cityList">
                             <datalist id="cityList">
                                 ${cityOptions}
                             </datalist>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                                💡 Type your city/area if not in list
+                            </small>
                         </div>
                         <div class="form-group">
                             <label>Mobile Number *</label>
@@ -679,14 +837,14 @@ document.getElementById('becomeTutorBtn').addEventListener('click', () => {
 });
 
 window.submitTutorRegistration = async function() {
-    const name = document.getElementById('tutorName').value;
-    const specialization = document.getElementById('tutorSpecialization').value;
-    const location = document.getElementById('tutorLocation').value;
-    const mobile = document.getElementById('tutorMobile').value;
+    const name = document.getElementById('tutorName').value.trim();
+    const specialization = document.getElementById('tutorSpecialization').value.trim();
+    const location = document.getElementById('tutorLocation').value.trim();
+    const mobile = document.getElementById('tutorMobile').value.trim();
     const age = document.getElementById('tutorAge').value;
     const experience = document.getElementById('tutorExperience').value;
     const hourlyRate = document.getElementById('tutorRate').value;
-    const certifications = document.getElementById('tutorCertifications').value;
+    const certifications = document.getElementById('tutorCertifications').value.trim();
     
     if (!name || !specialization || !location || !mobile || !age || !experience || !hourlyRate) {
         alert('Please fill all required fields');
@@ -694,13 +852,13 @@ window.submitTutorRegistration = async function() {
     }
     
     try {
-        // Create tutor profile
+        // Create tutor profile (accepts any specialization and location user types)
         const tutorRef = ref(database, `tutors/${currentUser.uid}`);
         await set(tutorRef, {
             userId: currentUser.uid,
             name: name,
-            specialization: specialization,
-            location: location,
+            specialization: specialization,  // Saves whatever user typed
+            location: location,  // Saves whatever user typed
             mobile: mobile,
             age: parseInt(age),
             experience: parseInt(experience),
@@ -718,10 +876,12 @@ window.submitTutorRegistration = async function() {
         
         currentUserData.isTutor = true;
         
+        // Update UI
+        document.getElementById('becomeTutorBanner').classList.add('hidden');
+        document.getElementById('userRole').textContent = '👨‍🏫 Tutor';
+        
         closeModal('becomeTutorModal');
         alert('Congratulations! You are now registered as a tutor on ApnaSkills.');
-        document.getElementById('becomeTutorBanner').classList.add('hidden');
-        addTutorProfileLink();
         loadTutors();
         
     } catch (error) {
@@ -730,26 +890,7 @@ window.submitTutorRegistration = async function() {
     }
 }
 
-// Add tutor profile link to navigation
-function addTutorProfileLink() {
-    const navMenu = document.querySelector('.nav-menu');
-    const userProfile = document.getElementById('userProfile');
-    
-    // Check if link doesn't already exist
-    if (!document.querySelector('[data-page="tutor-profile"]')) {
-        const tutorLink = document.createElement('a');
-        tutorLink.href = '#';
-        tutorLink.className = 'nav-link';
-        tutorLink.dataset.page = 'tutor-profile';
-        tutorLink.textContent = 'My Profile';
-        tutorLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            viewTutorDetails(currentUser.uid);
-        });
-        
-        navMenu.insertBefore(tutorLink, userProfile);
-    }
-}
+// Remove the addTutorProfileLink function as we now have profile in nav always
 
 // Continued in next part...
 // ==================== LOAD BOOKINGS ====================
