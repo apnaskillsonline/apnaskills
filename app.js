@@ -606,3 +606,723 @@ window.viewTutorDetails = async function(tutorId) {
                     <div style="margin-bottom: 24px;">
                         <h3 style="margin-bottom: 12px;">About</h3>
                         <div style="display: grid; grid-template-columns
+                        // APPEND THIS TO THE END OF app.js (Part 1)
+
+// Continuation of viewTutorDetails function
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div><strong>Experience:</strong> ${tutor.experience} years</div>
+                            <div><strong>Age:</strong> ${tutor.age}</div>
+                            <div><strong>Location:</strong> ${tutor.location}</div>
+                            <div><strong>Email:</strong> ${tutor.email}</div>
+                        </div>
+                    </div>
+                    
+                    ${tutor.certifications ? `
+                    <div style="margin-bottom: 24px;">
+                        <h3 style="margin-bottom: 12px;">Certifications</h3>
+                        <p style="color: var(--text-secondary);">${tutor.certifications}</p>
+                    </div>
+                    ` : ''}
+                    
+                    <div>
+                        <h3 style="margin-bottom: 12px;">Reviews</h3>
+                        ${ratingsHTML}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('tutorDetailsModal')">Close</button>
+                    <button class="btn btn-primary" onclick="closeModal('tutorDetailsModal'); showBookingModal('${tutorId}')">Book Session</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// ==================== BOOKING MODAL ====================
+
+window.showBookingModal = function(tutorId) {
+    const tutor = allTutors.find(t => t.id === tutorId);
+    if (!tutor) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    const modalHTML = `
+        <div class="modal" id="bookingModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Book Session with ${tutor.name}</h2>
+                    <button class="modal-close" onclick="closeModal('bookingModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="bookingForm">
+                        <div class="form-group">
+                            <label>Your Address *</label>
+                            <input type="text" id="bookingAddress" required placeholder="Enter your full address">
+                        </div>
+                        <div class="form-group">
+                            <label>Preferred Date *</label>
+                            <input type="date" id="bookingDate" required min="${today}">
+                        </div>
+                        <div class="form-group">
+                            <label>Preferred Time *</label>
+                            <input type="time" id="bookingTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Session Duration (hours) *</label>
+                            <input type="number" id="bookingHours" min="1" max="8" value="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description of your needs *</label>
+                            <textarea id="bookingDescription" required placeholder="Tell the tutor what you need help with..."></textarea>
+                        </div>
+                        <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-top: 16px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 600;">
+                                <span>Estimated Cost:</span>
+                                <span style="color: var(--primary);">₹<span id="estimatedCost">${tutor.hourlyRate}</span></span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('bookingModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitBooking('${tutorId}')">Confirm Booking</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Update cost on hours change
+    document.getElementById('bookingHours').addEventListener('input', (e) => {
+        const hours = parseInt(e.target.value) || 1;
+        document.getElementById('estimatedCost').textContent = hours * tutor.hourlyRate;
+    });
+}
+
+window.submitBooking = async function(tutorId) {
+    const tutor = allTutors.find(t => t.id === tutorId);
+    const address = document.getElementById('bookingAddress').value;
+    const date = document.getElementById('bookingDate').value;
+    const time = document.getElementById('bookingTime').value;
+    const hours = parseInt(document.getElementById('bookingHours').value);
+    const description = document.getElementById('bookingDescription').value;
+    
+    if (!address || !date || !time || !hours || !description) {
+        alert('Please fill all fields');
+        return;
+    }
+    
+    try {
+        // Create booking
+        const bookingRef = push(ref(database, 'bookings'));
+        const bookingData = {
+            studentId: currentUser.uid,
+            studentName: currentUser.displayName,
+            studentEmail: currentUser.email,
+            tutorId: tutorId,
+            tutorName: tutor.name,
+            address: address,
+            date: date,
+            time: time,
+            hours: hours,
+            description: description,
+            totalCost: hours * tutor.hourlyRate,
+            status: 'pending',
+            createdAt: Date.now()
+        };
+        
+        await set(bookingRef, bookingData);
+        
+        // Send notification to tutor
+        const tutorNotifRef = push(ref(database, `notifications/${tutorId}`));
+        await set(tutorNotifRef, {
+            type: 'new_booking',
+            bookingId: bookingRef.key,
+            message: `New booking request from ${currentUser.displayName}`,
+            timestamp: Date.now(),
+            read: false
+        });
+        
+        // Send notification to student
+        const studentNotifRef = push(ref(database, `notifications/${currentUser.uid}`));
+        await set(studentNotifRef, {
+            type: 'booking_sent',
+            bookingId: bookingRef.key,
+            message: `Booking request sent to ${tutor.name}. Waiting for confirmation.`,
+            timestamp: Date.now(),
+            read: false
+        });
+        
+        closeModal('bookingModal');
+        alert('Booking request sent successfully! The tutor will respond soon.');
+        navigateToPage('bookings');
+        
+    } catch (error) {
+        console.error('Booking error:', error);
+        alert('Failed to create booking. Please try again.');
+    }
+}
+
+// ==================== BECOME TUTOR ====================
+
+document.getElementById('becomeTutorBtn').addEventListener('click', () => {
+    const specializationOptions = specializations.map(spec => 
+        `<option value="${spec}">${spec}</option>`
+    ).join('');
+    
+    const cityOptions = indianCities.map(city => 
+        `<option value="${city}">${city}</option>`
+    ).join('');
+    
+    const modalHTML = `
+        <div class="modal" id="becomeTutorModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Register as a Tutor</h2>
+                    <button class="modal-close" onclick="closeModal('becomeTutorModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="tutorRegistrationForm">
+                        <div class="form-group">
+                            <label>Full Name *</label>
+                            <input type="text" id="tutorName" value="${currentUser.displayName}" required>
+                        </div>
+                        <div class="form-group" style="position: relative;">
+                            <label>Specialization *</label>
+                            <input type="text" id="tutorSpecialization" placeholder="Select from list or type your own" autocomplete="off" required list="specializationList">
+                            <datalist id="specializationList">
+                                ${specializationOptions}
+                            </datalist>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                                💡 Type any subject if not in list (e.g., "Tabla", "Sanskrit", "Cooking")
+                            </small>
+                        </div>
+                        <div class="form-group" style="position: relative;">
+                            <label>Location (City) *</label>
+                            <input type="text" id="tutorLocation" placeholder="Select from list or type your own" autocomplete="off" required list="cityList">
+                            <datalist id="cityList">
+                                ${cityOptions}
+                            </datalist>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                                💡 Type your city/area if not in list
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label>Mobile Number *</label>
+                            <input type="tel" id="tutorMobile" required placeholder="+91 XXXXXXXXXX" pattern="[+0-9]{10,15}">
+                        </div>
+                        <div class="form-group">
+                            <label>Age *</label>
+                            <input type="number" id="tutorAge" min="18" max="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Experience (years) *</label>
+                            <input type="number" id="tutorExperience" min="0" max="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Hourly Rate (₹) *</label>
+                            <input type="number" id="tutorRate" min="100" max="10000" required placeholder="e.g., 500">
+                        </div>
+                        <div class="form-group">
+                            <label>Certifications</label>
+                            <textarea id="tutorCertifications" placeholder="List your certifications, degrees, and qualifications..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('becomeTutorModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitTutorRegistration()">Register</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+});
+
+window.submitTutorRegistration = async function() {
+    const name = document.getElementById('tutorName').value.trim();
+    const specialization = document.getElementById('tutorSpecialization').value.trim();
+    const location = document.getElementById('tutorLocation').value.trim();
+    const mobile = document.getElementById('tutorMobile').value.trim();
+    const age = document.getElementById('tutorAge').value;
+    const experience = document.getElementById('tutorExperience').value;
+    const hourlyRate = document.getElementById('tutorRate').value;
+    const certifications = document.getElementById('tutorCertifications').value.trim();
+    
+    if (!name || !specialization || !location || !mobile || !age || !experience || !hourlyRate) {
+        alert('Please fill all required fields');
+        return;
+    }
+    
+    try {
+        // Create tutor profile
+        const tutorRef = ref(database, `tutors/${currentUser.uid}`);
+        await set(tutorRef, {
+            userId: currentUser.uid,
+            name: name,
+            specialization: specialization,
+            location: location,
+            mobile: mobile,
+            age: parseInt(age),
+            experience: parseInt(experience),
+            hourlyRate: parseInt(hourlyRate),
+            certifications: certifications,
+            email: currentUser.email,
+            photoURL: currentUser.photoURL,
+            createdAt: Date.now()
+        });
+        
+        // Update user status to tutor
+        await update(ref(database, `users/${currentUser.uid}`), {
+            isTutor: true
+        });
+        
+        currentUserData.isTutor = true;
+        
+        // Update UI
+        document.getElementById('becomeTutorBanner').classList.add('hidden');
+        document.getElementById('userRole').textContent = '👨‍🏫 Tutor';
+        
+        closeModal('becomeTutorModal');
+        alert('Congratulations! You are now registered as a tutor on ApnaSkills.');
+        await loadTutors();
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        alert('Failed to register. Please try again.');
+    }
+}
+
+// ==================== LOAD BOOKINGS ====================
+
+async function loadBookings() {
+    const bookingsRef = ref(database, 'bookings');
+    const snapshot = await get(bookingsRef);
+    
+    const currentBookings = [];
+    const pastBookings = [];
+    
+    if (snapshot.exists()) {
+        snapshot.forEach(childSnapshot => {
+            const booking = childSnapshot.val();
+            booking.id = childSnapshot.key;
+            
+            // Check if this booking belongs to current user
+            if (booking.studentId === currentUser.uid || booking.tutorId === currentUser.uid) {
+                if (booking.status === 'completed' || booking.status === 'rejected') {
+                    pastBookings.push(booking);
+                } else {
+                    currentBookings.push(booking);
+                }
+            }
+        });
+    }
+    
+    displayBookings(currentBookings, 'currentBookings');
+    displayBookings(pastBookings, 'pastBookings');
+    
+    // Setup tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            if (btn.dataset.tab === 'current') {
+                document.getElementById('currentBookings').classList.remove('hidden');
+                document.getElementById('pastBookings').classList.add('hidden');
+            } else {
+                document.getElementById('currentBookings').classList.add('hidden');
+                document.getElementById('pastBookings').classList.remove('hidden');
+            }
+        });
+    });
+}
+
+function displayBookings(bookings, containerId) {
+    const container = document.getElementById(containerId);
+    
+    if (bookings.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><p>No bookings found</p></div>';
+        return;
+    }
+    
+    container.innerHTML = bookings.map(booking => {
+        const isTutor = booking.tutorId === currentUser.uid;
+        const otherPerson = isTutor ? booking.studentName : booking.tutorName;
+        
+        let statusClass = 'status-pending';
+        if (booking.status === 'accepted') statusClass = 'status-accepted';
+        if (booking.status === 'rejected') statusClass = 'status-rejected';
+        if (booking.status === 'completed') statusClass = 'status-completed';
+        
+        let actionButtons = '';
+        if (isTutor && booking.status === 'pending') {
+            actionButtons = `
+                <button class="btn btn-success" onclick="respondToBooking('${booking.id}', 'accepted')">Accept</button>
+                <button class="btn btn-danger" onclick="respondToBooking('${booking.id}', 'rejected')">Reject</button>
+            `;
+        } else if (!isTutor && booking.status === 'accepted' && booking.tutorContact) {
+            actionButtons = `
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-top: 12px;">
+                    <strong>📞 Tutor Contact:</strong> ${booking.tutorContact}
+                </div>
+                <button class="btn btn-primary" onclick="markBookingCompleted('${booking.id}', '${booking.tutorId}', '${booking.tutorName}')">Mark as Completed & Rate</button>
+            `;
+        } else if (!isTutor && booking.status === 'completed' && !booking.rated) {
+            actionButtons = `
+                <button class="btn btn-primary" onclick="showRatingModal('${booking.id}', '${booking.tutorId}', '${booking.tutorName}')">Rate Tutor</button>
+            `;
+        }
+        
+        return `
+            <div class="booking-card">
+                <div class="booking-header">
+                    <div>
+                        <h3>${isTutor ? '👨‍🎓 Student' : '👨‍🏫 Tutor'}: ${otherPerson}</h3>
+                        <p style="color: var(--text-secondary); margin-top: 4px;">
+                            📅 ${booking.date} at ${booking.time} • ${booking.hours} hour(s)
+                        </p>
+                    </div>
+                    <span class="booking-status ${statusClass}">${booking.status}</span>
+                </div>
+                <div style="margin: 16px 0;">
+                    <p><strong>Location:</strong> ${booking.address}</p>
+                    <p><strong>Description:</strong> ${booking.description}</p>
+                    <p><strong>Total Cost:</strong> ₹${booking.totalCost}</p>
+                </div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    ${actionButtons}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.respondToBooking = async function(bookingId, response) {
+    try {
+        const bookingRef = ref(database, `bookings/${bookingId}`);
+        const snapshot = await get(bookingRef);
+        const booking = snapshot.val();
+        
+        // Get tutor info
+        const tutorRef = ref(database, `tutors/${booking.tutorId}`);
+        const tutorSnapshot = await get(tutorRef);
+        const tutor = tutorSnapshot.val();
+        
+        // Update booking
+        const updateData = {
+            status: response,
+            respondedAt: Date.now()
+        };
+        
+        if (response === 'accepted') {
+            updateData.tutorContact = tutor.mobile;
+        }
+        
+        await update(bookingRef, updateData);
+        
+        // Send notification
+        const notificationMessage = response === 'accepted' 
+            ? `${booking.tutorName} has accepted your booking! Contact: ${tutor.mobile}`
+            : `${booking.tutorName} has declined your booking request.`;
+        
+        const studentNotifRef = push(ref(database, `notifications/${booking.studentId}`));
+        await set(studentNotifRef, {
+            type: response === 'accepted' ? 'booking_accepted' : 'booking_rejected',
+            bookingId: bookingId,
+            message: notificationMessage,
+            timestamp: Date.now(),
+            read: false
+        });
+        
+        alert(response === 'accepted' ? 'Booking accepted!' : 'Booking rejected.');
+        loadBookings();
+        
+    } catch (error) {
+        console.error('Response error:', error);
+        alert('Failed to respond. Please try again.');
+    }
+}
+
+window.markBookingCompleted = async function(bookingId, tutorId, tutorName) {
+    showRatingModal(bookingId, tutorId, tutorName);
+}
+
+// ==================== RATING MODAL ====================
+
+window.showRatingModal = function(bookingId, tutorId, tutorName) {
+    const modalHTML = `
+        <div class="modal" id="ratingModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Rate ${tutorName}</h2>
+                    <button class="modal-close" onclick="closeModal('ratingModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Did the tutor show up? *</label>
+                        <select id="tutorShowedUp" required>
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Your Rating *</label>
+                        <div class="rating-input" id="ratingStars">
+                            <span data-rating="1">☆</span>
+                            <span data-rating="2">☆</span>
+                            <span data-rating="3">☆</span>
+                            <span data-rating="4">☆</span>
+                            <span data-rating="5">☆</span>
+                        </div>
+                        <input type="hidden" id="selectedRating" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Review (Optional)</label>
+                        <textarea id="ratingReview" placeholder="Share your experience..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Complaint or Suggestion (Optional)</label>
+                        <textarea id="ratingComplaint" placeholder="Any complaints or suggestions?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('ratingModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitRating('${bookingId}', '${tutorId}', '${tutorName}')">Submit Rating</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Setup rating stars
+    const stars = document.querySelectorAll('#ratingStars span');
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            const rating = parseInt(star.dataset.rating);
+            document.getElementById('selectedRating').value = rating;
+            
+            stars.forEach((s, index) => {
+                if (index < rating) {
+                    s.textContent = '★';
+                    s.classList.add('active');
+                } else {
+                    s.textContent = '☆';
+                    s.classList.remove('active');
+                }
+            });
+        });
+    });
+}
+
+window.submitRating = async function(bookingId, tutorId, tutorName) {
+    const showedUp = document.getElementById('tutorShowedUp').value;
+    const rating = parseInt(document.getElementById('selectedRating').value);
+    const review = document.getElementById('ratingReview').value;
+    const complaint = document.getElementById('ratingComplaint').value;
+    
+    if (rating === 0) {
+        alert('Please select a rating');
+        return;
+    }
+    
+    try {
+        await update(ref(database, `bookings/${bookingId}`), {
+            status: 'completed',
+            rated: true,
+            showedUp: showedUp === 'yes'
+        });
+        
+        const ratingRef = push(ref(database, `tutors/${tutorId}/ratings`));
+        await set(ratingRef, {
+            studentId: currentUser.uid,
+            studentName: currentUser.displayName,
+            rating: rating,
+            review: review,
+            showedUp: showedUp === 'yes',
+            timestamp: Date.now()
+        });
+        
+        if (complaint) {
+            const notifRef = push(ref(database, `notifications/${tutorId}`));
+            await set(notifRef, {
+                type: 'complaint',
+                bookingId: bookingId,
+                message: `Feedback from ${currentUser.displayName}: ${complaint}`,
+                timestamp: Date.now(),
+                read: false
+            });
+        }
+        
+        const studentNotifRef = push(ref(database, `notifications/${currentUser.uid}`));
+        await set(studentNotifRef, {
+            type: 'rating_submitted',
+            message: `Thank you for rating ${tutorName}!`,
+            timestamp: Date.now(),
+            read: false
+        });
+        
+        closeModal('ratingModal');
+        alert('Thank you for your feedback!');
+        loadBookings();
+        loadTutors();
+        
+    } catch (error) {
+        console.error('Rating error:', error);
+        alert('Failed to submit rating. Please try again.');
+    }
+}
+
+async function checkPendingRatings() {
+    const bookingsRef = ref(database, 'bookings');
+    const snapshot = await get(bookingsRef);
+    
+    if (snapshot.exists()) {
+        snapshot.forEach(childSnapshot => {
+            const booking = childSnapshot.val();
+            
+            if (booking.studentId === currentUser.uid && 
+                booking.status === 'accepted' && 
+                !booking.rated) {
+                
+                const bookingDate = new Date(booking.date);
+                const today = new Date();
+                
+                if (bookingDate < today) {
+                    setTimeout(() => {
+                        if (confirm(`Did you have a session with ${booking.tutorName}? Would you like to rate them?`)) {
+                            showRatingModal(childSnapshot.key, booking.tutorId, booking.tutorName);
+                        }
+                    }, 2000);
+                }
+            }
+        });
+    }
+}
+
+// ==================== NOTIFICATIONS ====================
+
+async function loadNotifications() {
+    const notifRef = ref(database, `notifications/${currentUser.uid}`);
+    const snapshot = await get(notifRef);
+    
+    const notifications = [];
+    let unreadCount = 0;
+    
+    if (snapshot.exists()) {
+        snapshot.forEach(childSnapshot => {
+            const notif = childSnapshot.val();
+            notif.id = childSnapshot.key;
+            notifications.push(notif);
+            
+            if (!notif.read) {
+                unreadCount++;
+            }
+        });
+    }
+    
+    notifications.sort((a, b) => b.timestamp - a.timestamp);
+    
+    const badge = document.getElementById('notificationBadge');
+    if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+    
+    displayNotifications(notifications);
+}
+
+function displayNotifications(notifications) {
+    const container = document.getElementById('notificationsList');
+    
+    if (notifications.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔔</div><p>No notifications</p></div>';
+        return;
+    }
+    
+    container.innerHTML = notifications.map(notif => {
+        const timeAgo = getTimeAgo(notif.timestamp);
+        
+        return `
+            <div class="notification-item ${!notif.read ? 'unread' : ''}">
+                <div class="notification-header">
+                    <strong>${getNotificationIcon(notif.type)} ${notif.type.replace(/_/g, ' ').toUpperCase()}</strong>
+                    <span class="notification-time">${timeAgo}</span>
+                </div>
+                <p>${notif.message}</p>
+            </div>
+        `;
+    }).join('');
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'welcome': '👋',
+        'new_booking': '📚',
+        'booking_sent': '✉️',
+        'booking_accepted': '✅',
+        'booking_rejected': '❌',
+        'complaint': '⚠️',
+        'rating_submitted': '⭐'
+    };
+    return icons[type] || '🔔';
+}
+
+function getTimeAgo(timestamp) {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return new Date(timestamp).toLocaleDateString();
+}
+
+async function markNotificationsAsRead() {
+    const notifRef = ref(database, `notifications/${currentUser.uid}`);
+    const snapshot = await get(notifRef);
+    
+    if (snapshot.exists()) {
+        snapshot.forEach(async (childSnapshot) => {
+            const notif = childSnapshot.val();
+            if (!notif.read) {
+                await update(ref(database, `notifications/${currentUser.uid}/${childSnapshot.key}`), {
+                    read: true
+                });
+            }
+        });
+    }
+    
+    document.getElementById('notificationBadge').classList.add('hidden');
+}
+
+function setupNotificationListener() {
+    const notifRef = ref(database, `notifications/${currentUser.uid}`);
+    onValue(notifRef, (snapshot) => {
+        loadNotifications();
+    });
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+
+window.closeModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.remove();
+    }
+}
+
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+        e.target.remove();
+    }
+});
+
+console.log('ApnaSkills Platform Loaded Successfully!');
