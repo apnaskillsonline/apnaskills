@@ -25,6 +25,36 @@ let currentUser = null;
 let currentUserData = null;
 let allTutors = [];
 let filteredTutors = [];
+let isSearchActive = false;
+
+// Indian Cities List
+const indianCities = [
+    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Kolkata', 'Surat', 'Pune', 'Jaipur',
+    'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Bhopal', 'Visakhapatnam', 'Pimpri-Chinchwad', 'Patna', 'Vadodara',
+    'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 'Rajkot', 'Kalyan-Dombivali', 'Vasai-Virar', 'Varanasi',
+    'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar', 'Navi Mumbai', 'Allahabad', 'Ranchi', 'Howrah', 'Coimbatore', 'Jabalpur',
+    'Gwalior', 'Vijayawada', 'Jodhpur', 'Madurai', 'Raipur', 'Kota', 'Chandigarh', 'Guwahati', 'Solapur', 'Hubli-Dharwad',
+    'Mysore', 'Tiruchirappalli', 'Bareilly', 'Aligarh', 'Tiruppur', 'Moradabad', 'Jalandhar', 'Bhubaneswar', 'Salem', 'Warangal',
+    'Guntur', 'Bhiwandi', 'Saharanpur', 'Gorakhpur', 'Bikaner', 'Amravati', 'Noida', 'Jamshedpur', 'Bhilai', 'Cuttack',
+    'Firozabad', 'Kochi', 'Nellore', 'Bhavnagar', 'Dehradun', 'Durgapur', 'Asansol', 'Rourkela', 'Nanded', 'Kolhapur',
+    'Ajmer', 'Akola', 'Gulbarga', 'Jamnagar', 'Ujjain', 'Loni', 'Siliguri', 'Jhansi', 'Ulhasnagar', 'Jammu',
+    'Sangli-Miraj', 'Mangalore', 'Erode', 'Belgaum', 'Ambattur', 'Tirunelveli', 'Malegaon', 'Gaya', 'Jalgaon', 'Udaipur'
+];
+
+// Specializations List
+const specializations = [
+    'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Hindi', 'Computer Science', 
+    'Programming', 'Web Development', 'Data Science', 'Machine Learning', 'Artificial Intelligence',
+    'Python', 'Java', 'JavaScript', 'C++', 'Science', 'Social Studies', 'History', 'Geography',
+    'Economics', 'Commerce', 'Accountancy', 'Business Studies', 'Statistics', 'Music', 'Vocal Music',
+    'Guitar', 'Piano', 'Keyboard', 'Drums', 'Classical Music', 'Dance', 'Classical Dance', 'Kathak',
+    'Bharatanatyam', 'Contemporary Dance', 'Hip Hop', 'Art', 'Drawing', 'Painting', 'Sketching',
+    'Craft', 'French', 'German', 'Spanish', 'Japanese', 'Korean', 'Foreign Languages', 
+    'English Spoken', 'IELTS', 'TOEFL', 'Personality Development', 'Public Speaking', 'Communication Skills',
+    'Yoga', 'Fitness', 'Meditation', 'Chess', 'Coding', 'Robotics', 'Electronics', 'Photography',
+    'Video Editing', 'Graphic Design', 'Digital Marketing', 'Content Writing', 'Creative Writing'
+];
+
 
 // ==================== AUTHENTICATION ====================
 
@@ -190,17 +220,21 @@ function displayTutors(tutors) {
     const grid = document.getElementById('tutorsGrid');
     
     if (tutors.length === 0) {
-        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>No tutors found. Try different search criteria.</p></div>';
+        if (isSearchActive) {
+            grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>No tutors found matching your search criteria. Try different keywords or <button class="btn btn-primary" onclick="document.getElementById(\'clearSearchBtn\').click()">clear search</button></p></div>';
+        } else {
+            grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎓</div><p>No tutors available yet. Be the first to register as a tutor!</p></div>';
+        }
         return;
     }
     
     grid.innerHTML = tutors.map(tutor => `
         <div class="tutor-card" onclick="viewTutorDetails('${tutor.id}')">
             <div class="tutor-header">
-                <img src="${tutor.photoURL || 'https://via.placeholder.com/80'}" alt="${tutor.name}" class="tutor-avatar">
+                <img src="${tutor.photoURL || 'https://via.placeholder.com/80'}" alt="${tutor.name}" class="tutor-avatar" onerror="this.src='https://via.placeholder.com/80?text=Avatar'">
                 <div class="tutor-info">
                     <h3>${tutor.name}</h3>
-                    <div class="tutor-specialization">${formatSpecialization(tutor.specialization)}</div>
+                    <div class="tutor-specialization">${tutor.specialization}</div>
                     <div class="tutor-rating">
                         ⭐ ${tutor.avgRating} (${tutor.totalRatings} reviews)
                     </div>
@@ -223,23 +257,154 @@ function displayTutors(tutors) {
 }
 
 function formatSpecialization(spec) {
-    return spec.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    // Return as-is since we're now using natural language
+    return spec;
 }
 
 // ==================== SEARCH FUNCTIONALITY ====================
 
+// Setup autocomplete for location
+const locationInput = document.getElementById('locationInput');
+const locationSuggestions = document.getElementById('locationSuggestions');
+
+locationInput.addEventListener('input', (e) => {
+    const value = e.target.value.toLowerCase().trim();
+    
+    if (value.length === 0) {
+        locationSuggestions.classList.add('hidden');
+        return;
+    }
+    
+    // Filter cities that match
+    const matches = indianCities.filter(city => 
+        city.toLowerCase().includes(value)
+    );
+    
+    if (matches.length === 0) {
+        // Show custom option
+        locationSuggestions.innerHTML = `
+            <div class="suggestion-item custom-option" data-value="${e.target.value}">
+                ✏️ Use "${e.target.value}"
+            </div>
+        `;
+        locationSuggestions.classList.remove('hidden');
+    } else {
+        // Show matching cities
+        locationSuggestions.innerHTML = matches.slice(0, 10).map(city => `
+            <div class="suggestion-item" data-value="${city}">${city}</div>
+        `).join('');
+        
+        // Add custom option at the end
+        locationSuggestions.innerHTML += `
+            <div class="suggestion-item custom-option" data-value="${e.target.value}">
+                ✏️ Use "${e.target.value}"
+            </div>
+        `;
+        locationSuggestions.classList.remove('hidden');
+    }
+    
+    // Add click handlers
+    document.querySelectorAll('#locationSuggestions .suggestion-item').forEach(item => {
+        item.addEventListener('click', () => {
+            locationInput.value = item.dataset.value;
+            locationSuggestions.classList.add('hidden');
+        });
+    });
+});
+
+// Setup autocomplete for specialization
+const specializationInput = document.getElementById('specializationInput');
+const specializationSuggestions = document.getElementById('specializationSuggestions');
+
+specializationInput.addEventListener('input', (e) => {
+    const value = e.target.value.toLowerCase().trim();
+    
+    if (value.length === 0) {
+        specializationSuggestions.classList.add('hidden');
+        return;
+    }
+    
+    // Filter specializations that match
+    const matches = specializations.filter(spec => 
+        spec.toLowerCase().includes(value)
+    );
+    
+    if (matches.length === 0) {
+        // Show custom option
+        specializationSuggestions.innerHTML = `
+            <div class="suggestion-item custom-option" data-value="${e.target.value}">
+                ✏️ Use "${e.target.value}"
+            </div>
+        `;
+        specializationSuggestions.classList.remove('hidden');
+    } else {
+        // Show matching specializations
+        specializationSuggestions.innerHTML = matches.slice(0, 10).map(spec => `
+            <div class="suggestion-item" data-value="${spec}">${spec}</div>
+        `).join('');
+        
+        // Add custom option at the end
+        specializationSuggestions.innerHTML += `
+            <div class="suggestion-item custom-option" data-value="${e.target.value}">
+                ✏️ Use "${e.target.value}"
+            </div>
+        `;
+        specializationSuggestions.classList.remove('hidden');
+    }
+    
+    // Add click handlers
+    document.querySelectorAll('#specializationSuggestions .suggestion-item').forEach(item => {
+        item.addEventListener('click', () => {
+            specializationInput.value = item.dataset.value;
+            specializationSuggestions.classList.add('hidden');
+        });
+    });
+});
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.input-group')) {
+        locationSuggestions.classList.add('hidden');
+        specializationSuggestions.classList.add('hidden');
+    }
+});
+
+// Handle search form submission
 document.getElementById('searchForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const location = document.getElementById('locationInput').value.toLowerCase();
-    const specialization = document.getElementById('specializationInput').value;
+    const location = locationInput.value.toLowerCase().trim();
+    const specialization = specializationInput.value.toLowerCase().trim();
+    
+    if (!location && !specialization) {
+        alert('Please enter location or specialization to search');
+        return;
+    }
+    
+    isSearchActive = true;
     
     filteredTutors = allTutors.filter(tutor => {
-        const locationMatch = tutor.location.toLowerCase().includes(location);
-        const specializationMatch = !specialization || tutor.specialization === specialization;
+        const locationMatch = !location || tutor.location.toLowerCase().includes(location);
+        const specializationMatch = !specialization || 
+            tutor.specialization.toLowerCase().includes(specialization) ||
+            tutor.name.toLowerCase().includes(specialization);
         return locationMatch && specializationMatch;
     });
     
     displayTutors(filteredTutors);
+    
+    // Hide suggestions
+    locationSuggestions.classList.add('hidden');
+    specializationSuggestions.classList.add('hidden');
+});
+
+// Clear search button
+document.getElementById('clearSearchBtn').addEventListener('click', () => {
+    locationInput.value = '';
+    specializationInput.value = '';
+    isSearchActive = false;
+    displayTutors(allTutors);
+    locationSuggestions.classList.add('hidden');
+    specializationSuggestions.classList.add('hidden');
 });
 
 // ==================== TUTOR DETAILS MODAL ====================
@@ -274,10 +439,10 @@ window.viewTutorDetails = async function(tutorId) {
                 </div>
                 <div class="modal-body">
                     <div style="display: flex; gap: 24px; margin-bottom: 24px;">
-                        <img src="${tutor.photoURL || 'https://via.placeholder.com/120'}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary);">
+                        <img src="${tutor.photoURL || 'https://via.placeholder.com/120'}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary);" onerror="this.src='https://via.placeholder.com/120?text=Avatar'">
                         <div style="flex: 1;">
                             <h2 style="margin-bottom: 8px;">${tutor.name}</h2>
-                            <p style="color: var(--primary); font-weight: 600; margin-bottom: 8px;">${formatSpecialization(tutor.specialization)}</p>
+                            <p style="color: var(--primary); font-weight: 600; margin-bottom: 8px;">${tutor.specialization}</p>
                             <div style="color: var(--warning); margin-bottom: 8px;">⭐ ${tutor.avgRating} (${tutor.totalRatings} reviews)</div>
                             <div style="font-size: 24px; font-weight: 700; color: var(--primary);">₹${tutor.hourlyRate}/hour</div>
                         </div>
@@ -445,6 +610,14 @@ window.submitBooking = async function(tutorId) {
 // ==================== BECOME TUTOR ====================
 
 document.getElementById('becomeTutorBtn').addEventListener('click', () => {
+    const specializationOptions = specializations.map(spec => 
+        `<option value="${spec}">${spec}</option>`
+    ).join('');
+    
+    const cityOptions = indianCities.map(city => 
+        `<option value="${city}">${city}</option>`
+    ).join('');
+    
     const modalHTML = `
         <div class="modal" id="becomeTutorModal">
             <div class="modal-content">
@@ -458,30 +631,23 @@ document.getElementById('becomeTutorBtn').addEventListener('click', () => {
                             <label>Full Name *</label>
                             <input type="text" id="tutorName" value="${currentUser.displayName}" required>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" style="position: relative;">
                             <label>Specialization *</label>
-                            <select id="tutorSpecialization" required>
-                                <option value="">Select subject</option>
-                                <option value="mathematics">Mathematics</option>
-                                <option value="physics">Physics</option>
-                                <option value="chemistry">Chemistry</option>
-                                <option value="biology">Biology</option>
-                                <option value="english">English</option>
-                                <option value="computer_science">Computer Science</option>
-                                <option value="programming">Programming</option>
-                                <option value="data_science">Data Science</option>
-                                <option value="music">Music</option>
-                                <option value="art">Art</option>
-                                <option value="languages">Foreign Languages</option>
-                            </select>
+                            <input type="text" id="tutorSpecialization" placeholder="Select or type your specialization" autocomplete="off" required list="specializationList">
+                            <datalist id="specializationList">
+                                ${specializationOptions}
+                            </datalist>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" style="position: relative;">
                             <label>Location (City) *</label>
-                            <input type="text" id="tutorLocation" required placeholder="e.g., Mumbai">
+                            <input type="text" id="tutorLocation" placeholder="Select or type your city" autocomplete="off" required list="cityList">
+                            <datalist id="cityList">
+                                ${cityOptions}
+                            </datalist>
                         </div>
                         <div class="form-group">
                             <label>Mobile Number *</label>
-                            <input type="tel" id="tutorMobile" required placeholder="+91 XXXXXXXXXX">
+                            <input type="tel" id="tutorMobile" required placeholder="+91 XXXXXXXXXX" pattern="[+0-9]{10,15}">
                         </div>
                         <div class="form-group">
                             <label>Age *</label>
@@ -586,8 +752,9 @@ function addTutorProfileLink() {
 }
 
 // Continued in next part...
-
 // ==================== LOAD BOOKINGS ====================
+// Note: This file should be appended to app.js Part 1
+// Importing statements are already in Part 1
 
 async function loadBookings() {
     const bookingsRef = ref(database, 'bookings');
