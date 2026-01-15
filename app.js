@@ -113,21 +113,21 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('userName').textContent = user.displayName;
         document.getElementById('userAvatar').src = user.photoURL;
         
-        // Update user role display
-        if (currentUserData.isTutor) {
-            document.getElementById('userRole').textContent = '👨‍🏫 Tutor';
-            // Hide become tutor banner for tutors
-            document.getElementById('becomeTutorBanner').classList.add('hidden');
-        } else {
-            document.getElementById('userRole').textContent = '👨‍🎓 Student';
-            // Show become tutor banner for students
-            document.getElementById('becomeTutorBanner').classList.remove('hidden');
-        }
-        
         // Load initial data
         await loadTutors();
         await loadNotifications();
         setupNotificationListener();
+        
+        // Update user role display and hide banner if tutor
+        if (currentUserData.isTutor) {
+            document.getElementById('userRole').textContent = '👨‍🏫 Tutor';
+            const banner = document.getElementById('becomeTutorBanner');
+            if (banner) {
+                banner.style.display = 'none';
+            }
+        } else {
+            document.getElementById('userRole').textContent = '👨‍🎓 Student';
+        }
         
         // Check for pending rating popup on login
         setTimeout(() => {
@@ -186,152 +186,7 @@ function navigateToPage(page) {
             document.getElementById('notificationsPage').classList.remove('hidden');
             markNotificationsAsRead();
             break;
-        case 'profile':
-            document.getElementById('profilePage').classList.remove('hidden');
-            loadProfile();
-            break;
     }
-}
-
-// ==================== LOAD PROFILE ====================
-
-async function loadProfile() {
-    const container = document.getElementById('profileContent');
-    
-    if (!currentUser || !currentUserData) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Unable to load profile. Please refresh the page.</p></div>';
-        return;
-    }
-    
-    // Get fresh user data
-    const userRef = ref(database, `users/${currentUser.uid}`);
-    const userSnapshot = await get(userRef);
-    const userData = userSnapshot.val();
-    
-    let profileHTML = `
-        <div style="background: var(--bg-secondary); padding: 32px; border-radius: var(--radius); margin-bottom: 24px;">
-            <div style="display: flex; gap: 24px; align-items: center; margin-bottom: 24px;">
-                <img src="${currentUser.photoURL}" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--primary);" onerror="this.src='https://via.placeholder.com/100?text=Avatar'">
-                <div>
-                    <h2 style="margin-bottom: 8px;">${currentUser.displayName}</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 4px;">📧 ${currentUser.email}</p>
-                    <span style="background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                        ${userData.isTutor ? '👨‍🏫 TUTOR' : '👨‍🎓 STUDENT'}
-                    </span>
-                </div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div>
-                    <strong>User ID:</strong><br>
-                    <span style="color: var(--text-secondary); font-size: 12px; word-break: break-all;">${currentUser.uid}</span>
-                </div>
-                <div>
-                    <strong>Account Created:</strong><br>
-                    <span style="color: var(--text-secondary);">${new Date(userData.createdAt).toLocaleDateString()}</span>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // If user is a tutor, show tutor details
-    if (userData.isTutor) {
-        const tutorRef = ref(database, `tutors/${currentUser.uid}`);
-        const tutorSnapshot = await get(tutorRef);
-        const tutorData = tutorSnapshot.val();
-        
-        if (tutorData) {
-            // Calculate ratings
-            let avgRating = 0;
-            let totalRatings = 0;
-            let ratingsHTML = '';
-            
-            if (tutorData.ratings) {
-                const ratings = Object.values(tutorData.ratings);
-                const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
-                avgRating = (sum / ratings.length).toFixed(1);
-                totalRatings = ratings.length;
-                
-                ratingsHTML = ratings.map(r => `
-                    <div style="background: white; padding: 16px; border-radius: 8px; margin-bottom: 12px; box-shadow: var(--shadow);">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <div>
-                                <strong>${r.studentName}</strong>
-                                <div style="color: var(--warning); margin-top: 4px;">⭐ ${r.rating}/5</div>
-                            </div>
-                            <div style="color: var(--text-light); font-size: 12px;">${new Date(r.timestamp).toLocaleDateString()}</div>
-                        </div>
-                        ${r.review ? `<p style="color: var(--text-secondary); margin-top: 8px;">"${r.review}"</p>` : ''}
-                        <div style="margin-top: 8px; font-size: 12px;">
-                            ${r.showedUp ? '✅ Tutor showed up' : '❌ Tutor did not show up'}
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                ratingsHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No ratings yet</p>';
-            }
-            
-            profileHTML += `
-                <div style="background: white; padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 24px;">
-                    <h3 style="margin-bottom: 20px; color: var(--primary);">📚 Tutor Information</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                        <div>
-                            <strong>Specialization:</strong><br>
-                            <span style="color: var(--primary); font-size: 18px;">${tutorData.specialization}</span>
-                        </div>
-                        <div>
-                            <strong>Location:</strong><br>
-                            <span style="color: var(--text-secondary);">${tutorData.location}</span>
-                        </div>
-                        <div>
-                            <strong>Experience:</strong><br>
-                            <span style="color: var(--text-secondary);">${tutorData.experience} years</span>
-                        </div>
-                        <div>
-                            <strong>Age:</strong><br>
-                            <span style="color: var(--text-secondary);">${tutorData.age} years</span>
-                        </div>
-                        <div>
-                            <strong>Hourly Rate:</strong><br>
-                            <span style="color: var(--success); font-size: 18px; font-weight: 600;">₹${tutorData.hourlyRate}/hour</span>
-                        </div>
-                        <div>
-                            <strong>Mobile:</strong><br>
-                            <span style="color: var(--text-secondary);">${tutorData.mobile}</span>
-                        </div>
-                    </div>
-                    ${tutorData.certifications ? `
-                        <div style="margin-top: 20px;">
-                            <strong>Certifications:</strong><br>
-                            <p style="color: var(--text-secondary); margin-top: 8px; line-height: 1.6;">${tutorData.certifications}</p>
-                        </div>
-                    ` : ''}
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--bg-tertiary);">
-                        <strong>Overall Rating:</strong>
-                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-                            <span style="font-size: 32px; color: var(--warning);">⭐ ${avgRating}</span>
-                            <span style="color: var(--text-secondary);">(${totalRatings} reviews)</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="background: white; padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow);">
-                    <h3 style="margin-bottom: 20px; color: var(--primary);">⭐ Reviews & Ratings</h3>
-                    ${ratingsHTML}
-                </div>
-            `;
-        }
-    } else {
-        profileHTML += `
-            <div style="background: linear-gradient(135deg, var(--secondary), var(--accent)); color: white; padding: 40px; border-radius: var(--radius); text-align: center;">
-                <h3 style="font-size: 24px; margin-bottom: 16px;">Want to become a tutor?</h3>
-                <p style="margin-bottom: 24px; opacity: 0.95;">Share your knowledge and earn by teaching students</p>
-                <button class="btn btn-primary" onclick="document.getElementById('becomeTutorBtn').click()">Register as Tutor</button>
-            </div>
-        `;
-    }
-    
-    container.innerHTML = profileHTML;
 }
 
 // ==================== LOAD TUTORS ====================
@@ -404,6 +259,11 @@ function displayTutors(tutors) {
             <button class="btn btn-primary" style="width: 100%;" onclick="event.stopPropagation(); showBookingModal('${tutor.id}')">Book Now</button>
         </div>
     `).join('');
+}
+
+function formatSpecialization(spec) {
+    // Return as-is since we're now using natural language
+    return spec;
 }
 
 // ==================== SEARCH FUNCTIONALITY ====================
@@ -541,13 +401,11 @@ document.getElementById('searchForm').addEventListener('submit', (e) => {
     locationSuggestions.classList.add('hidden');
     specializationSuggestions.classList.add('hidden');
     
-    // Scroll to tutors section with proper offset
+    // Scroll to tutors section with delay to ensure DOM is updated
     setTimeout(() => {
         const tutorsSection = document.querySelector('.tutors-section');
         if (tutorsSection) {
-            const yOffset = -80; // Account for sticky header
-            const y = tutorsSection.getBoundingClientRect().top + window.pageYOffset + yOffset;
-            window.scrollTo({top: y, behavior: 'smooth'});
+            tutorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, 100);
 });
@@ -605,10 +463,6 @@ window.viewTutorDetails = async function(tutorId) {
                     
                     <div style="margin-bottom: 24px;">
                         <h3 style="margin-bottom: 12px;">About</h3>
-                        <div style="display: grid; grid-template-columns
-                        // APPEND THIS TO THE END OF app.js (Part 1)
-
-// Continuation of viewTutorDetails function
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div><strong>Experience:</strong> ${tutor.experience} years</div>
                             <div><strong>Age:</strong> ${tutor.age}</div>
@@ -859,7 +713,7 @@ window.submitTutorRegistration = async function() {
     }
     
     try {
-        // Create tutor profile
+        // Create tutor profile (accepts any specialization and location user types)
         const tutorRef = ref(database, `tutors/${currentUser.uid}`);
         await set(tutorRef, {
             userId: currentUser.uid,
@@ -883,13 +737,16 @@ window.submitTutorRegistration = async function() {
         
         currentUserData.isTutor = true;
         
-        // Update UI
-        document.getElementById('becomeTutorBanner').classList.add('hidden');
+        // Update UI - hide banner and update role
+        const banner = document.getElementById('becomeTutorBanner');
+        if (banner) {
+            banner.style.display = 'none';
+        }
         document.getElementById('userRole').textContent = '👨‍🏫 Tutor';
         
         closeModal('becomeTutorModal');
         alert('Congratulations! You are now registered as a tutor on ApnaSkills.');
-        await loadTutors();
+        loadTutors();
         
     } catch (error) {
         console.error('Registration error:', error);
@@ -897,7 +754,12 @@ window.submitTutorRegistration = async function() {
     }
 }
 
+// Continued in next part...
+
+// Continued in next part...
 // ==================== LOAD BOOKINGS ====================
+// Note: This file should be appended to app.js Part 1
+// Importing statements are already in Part 1
 
 async function loadBookings() {
     const bookingsRef = ref(database, 'bookings');
@@ -911,7 +773,7 @@ async function loadBookings() {
             const booking = childSnapshot.val();
             booking.id = childSnapshot.key;
             
-            // Check if this booking belongs to current user
+            // Check if this booking belongs to current user (as student or tutor)
             if (booking.studentId === currentUser.uid || booking.tutorId === currentUser.uid) {
                 if (booking.status === 'completed' || booking.status === 'rejected') {
                     pastBookings.push(booking);
@@ -1008,24 +870,25 @@ window.respondToBooking = async function(bookingId, response) {
         const snapshot = await get(bookingRef);
         const booking = snapshot.val();
         
-        // Get tutor info
+        // Get tutor info first for contact
         const tutorRef = ref(database, `tutors/${booking.tutorId}`);
         const tutorSnapshot = await get(tutorRef);
         const tutor = tutorSnapshot.val();
         
-        // Update booking
+        // Update booking status
         const updateData = {
             status: response,
             respondedAt: Date.now()
         };
         
+        // If accepted, add tutor contact info
         if (response === 'accepted') {
             updateData.tutorContact = tutor.mobile;
         }
         
         await update(bookingRef, updateData);
         
-        // Send notification
+        // Send notification to student
         const notificationMessage = response === 'accepted' 
             ? `${booking.tutorName} has accepted your booking! Contact: ${tutor.mobile}`
             : `${booking.tutorName} has declined your booking request.`;
@@ -1044,9 +907,11 @@ window.respondToBooking = async function(bookingId, response) {
         
     } catch (error) {
         console.error('Response error:', error);
-        alert('Failed to respond. Please try again.');
+        alert('Failed to respond to booking. Please try again.');
     }
 }
+
+// ==================== MARK BOOKING AS COMPLETED ====================
 
 window.markBookingCompleted = async function(bookingId, tutorId, tutorName) {
     showRatingModal(bookingId, tutorId, tutorName);
@@ -1132,12 +997,14 @@ window.submitRating = async function(bookingId, tutorId, tutorName) {
     }
     
     try {
+        // Update booking as completed
         await update(ref(database, `bookings/${bookingId}`), {
             status: 'completed',
             rated: true,
             showedUp: showedUp === 'yes'
         });
         
+        // Add rating to tutor
         const ratingRef = push(ref(database, `tutors/${tutorId}/ratings`));
         await set(ratingRef, {
             studentId: currentUser.uid,
@@ -1148,6 +1015,7 @@ window.submitRating = async function(bookingId, tutorId, tutorName) {
             timestamp: Date.now()
         });
         
+        // If there's a complaint, send notification to tutor
         if (complaint) {
             const notifRef = push(ref(database, `notifications/${tutorId}`));
             await set(notifRef, {
@@ -1159,6 +1027,7 @@ window.submitRating = async function(bookingId, tutorId, tutorName) {
             });
         }
         
+        // Send thank you notification to student
         const studentNotifRef = push(ref(database, `notifications/${currentUser.uid}`));
         await set(studentNotifRef, {
             type: 'rating_submitted',
@@ -1170,13 +1039,15 @@ window.submitRating = async function(bookingId, tutorId, tutorName) {
         closeModal('ratingModal');
         alert('Thank you for your feedback!');
         loadBookings();
-        loadTutors();
+        loadTutors(); // Refresh to update ratings
         
     } catch (error) {
         console.error('Rating error:', error);
         alert('Failed to submit rating. Please try again.');
     }
 }
+
+// ==================== CHECK PENDING RATINGS ====================
 
 async function checkPendingRatings() {
     const bookingsRef = ref(database, 'bookings');
@@ -1186,14 +1057,17 @@ async function checkPendingRatings() {
         snapshot.forEach(childSnapshot => {
             const booking = childSnapshot.val();
             
+            // Check if booking is completed but not rated
             if (booking.studentId === currentUser.uid && 
                 booking.status === 'accepted' && 
                 !booking.rated) {
                 
+                // Check if booking date has passed
                 const bookingDate = new Date(booking.date);
                 const today = new Date();
                 
                 if (bookingDate < today) {
+                    // Show rating popup
                     setTimeout(() => {
                         if (confirm(`Did you have a session with ${booking.tutorName}? Would you like to rate them?`)) {
                             showRatingModal(childSnapshot.key, booking.tutorId, booking.tutorName);
@@ -1226,8 +1100,10 @@ async function loadNotifications() {
         });
     }
     
+    // Sort by timestamp (newest first)
     notifications.sort((a, b) => b.timestamp - a.timestamp);
     
+    // Update badge
     const badge = document.getElementById('notificationBadge');
     if (unreadCount > 0) {
         badge.textContent = unreadCount;
@@ -1248,6 +1124,7 @@ function displayNotifications(notifications) {
     }
     
     container.innerHTML = notifications.map(notif => {
+        const date = new Date(notif.timestamp);
         const timeAgo = getTimeAgo(notif.timestamp);
         
         return `
@@ -1300,9 +1177,11 @@ async function markNotificationsAsRead() {
         });
     }
     
+    // Update badge
     document.getElementById('notificationBadge').classList.add('hidden');
 }
 
+// Setup real-time notification listener
 function setupNotificationListener() {
     const notifRef = ref(database, `notifications/${currentUser.uid}`);
     onValue(notifRef, (snapshot) => {
@@ -1319,10 +1198,13 @@ window.closeModal = function(modalId) {
     }
 }
 
+// Close modal when clicking outside
 document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
         e.target.remove();
     }
 });
+
+// ==================== INITIALIZE APP ====================
 
 console.log('ApnaSkills Platform Loaded Successfully!');
