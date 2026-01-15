@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ApnaSkills - Find Your Perfect Tutor</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <!-- ==================== LOGIN PAGE ==================== -->
@@ -31,9 +31,13 @@
                         Notifications
                         <span id="notificationBadge" class="notification-badge hidden">0</span>
                     </a>
+                    <a href="#" class="nav-link" data-page="profile" id="profileLink">My Profile</a>
                     <div class="user-profile" id="userProfile">
                         <img id="userAvatar" class="user-avatar" src="" alt="User">
-                        <span id="userName"></span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                            <span id="userName"></span>
+                            <span id="userRole" style="font-size: 11px; color: var(--primary); font-weight: 600;"></span>
+                        </div>
                     </div>
                     <button id="logoutBtn" class="btn btn-secondary">Logout</button>
                 </div>
@@ -54,29 +58,21 @@
             <div class="container">
                 <div class="search-container">
                     <form class="search-form" id="searchForm">
-                        <div class="input-group">
+                        <div class="input-group" style="position: relative;">
                             <label for="locationInput">Location</label>
-                            <input type="text" id="locationInput" placeholder="Enter your city" required>
+                            <input type="text" id="locationInput" placeholder="Select city or type your own" autocomplete="off">
+                            <div id="locationSuggestions" class="suggestions-dropdown hidden"></div>
+                            <small style="color: var(--text-secondary); font-size: 11px; margin-top: 4px;">💡 Type any city or area</small>
                         </div>
-                        <div class="input-group">
+                        <div class="input-group" style="position: relative;">
                             <label for="specializationInput">Specialization</label>
-                            <select id="specializationInput" required>
-                                <option value="">Select subject</option>
-                                <option value="mathematics">Mathematics</option>
-                                <option value="physics">Physics</option>
-                                <option value="chemistry">Chemistry</option>
-                                <option value="biology">Biology</option>
-                                <option value="english">English</option>
-                                <option value="computer_science">Computer Science</option>
-                                <option value="programming">Programming</option>
-                                <option value="data_science">Data Science</option>
-                                <option value="music">Music</option>
-                                <option value="art">Art</option>
-                                <option value="languages">Foreign Languages</option>
-                            </select>
+                            <input type="text" id="specializationInput" placeholder="Select subject or type your own" autocomplete="off">
+                            <div id="specializationSuggestions" class="suggestions-dropdown hidden"></div>
+                            <small style="color: var(--text-secondary); font-size: 11px; margin-top: 4px;">💡 Type any subject you need</small>
                         </div>
                         <button type="submit" class="btn btn-primary" style="align-self: flex-end;">Search</button>
                     </form>
+                    <button type="button" class="btn btn-secondary" id="clearSearchBtn" style="margin-top: 16px;">Clear Search</button>
                 </div>
 
                 <!-- Become Tutor Banner -->
@@ -155,10 +151,19 @@
                 </div>
             </div>
         </div>
+
+        <!-- ==================== PROFILE PAGE ==================== -->
+        <div id="profilePage" class="page-content hidden">
+            <div class="page-section">
+                <div class="bookings-container">
+                    <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">My Profile</h2>
+                    <div id="profileContent"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Load JavaScript -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
-
