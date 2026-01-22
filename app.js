@@ -235,14 +235,20 @@ function displayInstructors(instructors) {
         return;
     }
     
-    grid.innerHTML = instructors.map(instructor => `
+    grid.innerHTML = instructors.map(instructor => {
+        // Display multiple specializations
+        const specializationsDisplay = Array.isArray(instructor.specializations) 
+            ? instructor.specializations.join(', ') 
+            : instructor.specialization;
+        
+        return `
         <div class="tutor-card" onclick="viewInstructorDetails('${instructor.id}')">
             <div class="tutor-header">
                 <img src="${instructor.photoURL || 'https://via.placeholder.com/80'}" alt="${instructor.name}" class="tutor-avatar" onerror="this.src='https://via.placeholder.com/80?text=Avatar'">
                 <div class="tutor-info">
                     <h3>${instructor.name}</h3>
-                    <div class="tutor-specialization">${instructor.specialization}</div>
-                    <div class="tutor-rating">⭐ ${instructor.avgRating} (${instructor.totalRatings} reviews)</div>
+                    <div class="tutor-specialization">${specializationsDisplay}</div>
+                    <div class="tutor-rating">⭐ ${instructor.avgRating}</div>
                 </div>
             </div>
             <div class="tutor-details">
@@ -258,7 +264,8 @@ function displayInstructors(instructors) {
             <div class="tutor-price">₹${instructor.hourlyRate}/hour</div>
             <button class="btn btn-primary" style="width: 100%;" onclick="event.stopPropagation(); showBookingModal('${instructor.id}')">Book Now</button>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // ==================== SEARCH FUNCTIONALITY ====================
@@ -372,21 +379,10 @@ window.viewInstructorDetails = async function(instructorId) {
     const instructor = allInstructors.find(t => t.id === instructorId);
     if (!instructor) return;
     
-    let ratingsHTML = '';
-    if (instructor.ratings) {
-        const ratingsArray = Object.values(instructor.ratings);
-        ratingsHTML = ratingsArray.map(r => `
-            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <div style="color: var(--warning);">⭐ ${r.rating}/5</div>
-                    <div style="color: var(--text-light); font-size: 12px;">${new Date(r.timestamp).toLocaleDateString()}</div>
-                </div>
-                ${r.review ? `<p style="color: var(--text-secondary);">${r.review}</p>` : ''}
-            </div>
-        `).join('');
-    } else {
-        ratingsHTML = '<p style="color: var(--text-secondary);">No reviews yet</p>';
-    }
+    // Display specializations
+    const specializationsDisplay = Array.isArray(instructor.specializations) 
+        ? instructor.specializations.join(', ') 
+        : instructor.specialization;
     
     const modalHTML = `
         <div class="modal" id="instructorDetailsModal">
@@ -400,8 +396,8 @@ window.viewInstructorDetails = async function(instructorId) {
                         <img src="${instructor.photoURL || 'https://via.placeholder.com/120'}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary);" onerror="this.src='https://via.placeholder.com/120?text=Avatar'">
                         <div style="flex: 1;">
                             <h2 style="margin-bottom: 8px;">${instructor.name}</h2>
-                            <p style="color: var(--primary); font-weight: 600; margin-bottom: 8px;">${instructor.specialization}</p>
-                            <div style="color: var(--warning); margin-bottom: 8px;">⭐ ${instructor.avgRating} (${instructor.totalRatings} reviews)</div>
+                            <p style="color: var(--primary); font-weight: 600; margin-bottom: 8px;">${specializationsDisplay}</p>
+                            <div style="color: var(--warning); margin-bottom: 8px; font-size: 24px;">⭐ ${instructor.avgRating}</div>
                             <div style="font-size: 24px; font-weight: 700; color: var(--primary);">₹${instructor.hourlyRate}/hour</div>
                         </div>
                     </div>
@@ -409,9 +405,8 @@ window.viewInstructorDetails = async function(instructorId) {
                         <h3 style="margin-bottom: 12px;">About</h3>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div><strong>Experience:</strong> ${instructor.experience} years</div>
-                            <div><strong>Age:</strong> ${instructor.age}</div>
                             <div><strong>Location:</strong> ${instructor.location}</div>
-                            <div><strong>Email:</strong> ${instructor.email}</div>
+                            <div style="grid-column: 1 / -1;"><strong>Email:</strong> ${instructor.email}</div>
                         </div>
                     </div>
                     ${instructor.certifications ? `
@@ -420,10 +415,6 @@ window.viewInstructorDetails = async function(instructorId) {
                         <p style="color: var(--text-secondary);">${instructor.certifications}</p>
                     </div>
                     ` : ''}
-                    <div>
-                        <h3 style="margin-bottom: 12px;">Reviews</h3>
-                        ${ratingsHTML}
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" onclick="closeModal('instructorDetailsModal')">Close</button>
@@ -441,9 +432,14 @@ window.viewInstructorDetails = async function(instructorId) {
 // NOTE: This should be appended after Part 2
 
 // ==================== BOOKING MODAL ====================
-window.showBookingModal = function(instructorId) {
+window.showBookingModal = async function(instructorId) {
     const instructor = allInstructors.find(t => t.id === instructorId);
     if (!instructor) return;
+    
+    // Check if student has mobile number
+    const userRef = ref(database, `users/${currentUser.uid}`);
+    const userSnapshot = await get(userRef);
+    const userData = userSnapshot.val();
     
     const today = new Date().toISOString().split('T')[0];
     
@@ -456,6 +452,18 @@ window.showBookingModal = function(instructorId) {
                 </div>
                 <div class="modal-body">
                     <form id="bookingForm">
+                        ${!userData.mobile ? `
+                        <div class="form-group">
+                            <label>Your Mobile Number *</label>
+                            <input type="tel" id="studentMobile" required placeholder="+91 XXXXXXXXXX" pattern="[+0-9]{10,15}">
+                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">Required to share with instructor after booking confirmation</small>
+                        </div>
+                        ` : ''}
+                        <div class="form-group">
+                            <label>Subject/Class for Tuition *</label>
+                            <input type="text" id="subjectClass" required placeholder="e.g., Mathematics Class 10th, All Subjects Class 1-5">
+                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">Specify the subject and class level you need help with</small>
+                        </div>
                         <div class="form-group">
                             <label>Your Address *</label>
                             <input type="text" id="bookingAddress" required placeholder="Enter your full address">
@@ -473,8 +481,8 @@ window.showBookingModal = function(instructorId) {
                             <input type="number" id="bookingHours" min="1" max="8" value="1" required>
                         </div>
                         <div class="form-group">
-                            <label>Description of your needs *</label>
-                            <textarea id="bookingDescription" required placeholder="Tell the instructor what you need help with..."></textarea>
+                            <label>Additional Details</label>
+                            <textarea id="bookingDescription" placeholder="Any specific topics or requirements..."></textarea>
                         </div>
                         <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-top: 16px;">
                             <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 600;">
@@ -486,7 +494,7 @@ window.showBookingModal = function(instructorId) {
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" onclick="closeModal('bookingModal')">Cancel</button>
-                    <button class="btn btn-primary" onclick="submitBooking('${instructorId}')">Confirm Booking</button>
+                    <button class="btn btn-primary" onclick="submitBooking('${instructorId}', ${!userData.mobile})">Confirm Booking</button>
                 </div>
             </div>
         </div>
@@ -500,27 +508,51 @@ window.showBookingModal = function(instructorId) {
     });
 }
 
-window.submitBooking = async function(instructorId) {
+window.submitBooking = async function(instructorId, needsMobile) {
     const instructor = allInstructors.find(t => t.id === instructorId);
-    const address = document.getElementById('bookingAddress').value;
+    
+    let studentMobile = null;
+    if (needsMobile) {
+        studentMobile = document.getElementById('studentMobile').value.trim();
+        if (!studentMobile) {
+            alert('Please enter your mobile number');
+            return;
+        }
+    } else {
+        const userRef = ref(database, `users/${currentUser.uid}`);
+        const userSnapshot = await get(userRef);
+        studentMobile = userSnapshot.val().mobile;
+    }
+    
+    const subjectClass = document.getElementById('subjectClass').value.trim();
+    const address = document.getElementById('bookingAddress').value.trim();
     const date = document.getElementById('bookingDate').value;
     const time = document.getElementById('bookingTime').value;
     const hours = parseInt(document.getElementById('bookingHours').value);
-    const description = document.getElementById('bookingDescription').value;
+    const description = document.getElementById('bookingDescription').value.trim();
     
-    if (!address || !date || !time || !hours || !description) {
-        alert('Please fill all fields');
+    if (!subjectClass || !address || !date || !time || !hours) {
+        alert('Please fill all required fields');
         return;
     }
     
     try {
+        // Save mobile if new
+        if (needsMobile) {
+            await update(ref(database, `users/${currentUser.uid}`), {
+                mobile: studentMobile
+            });
+        }
+        
         const bookingRef = push(ref(database, 'bookings'));
         await set(bookingRef, {
             studentId: currentUser.uid,
             studentName: currentUser.displayName,
             studentEmail: currentUser.email,
+            studentMobile: studentMobile,
             instructorId: instructorId,
             instructorName: instructor.name,
+            subjectClass: subjectClass,
             address: address,
             date: date,
             time: time,
@@ -531,11 +563,20 @@ window.submitBooking = async function(instructorId) {
             createdAt: Date.now()
         });
         
+        // Get instructor specializations
+        const specializationsDisplay = Array.isArray(instructor.specializations) 
+            ? instructor.specializations.join(', ') 
+            : instructor.specialization;
+        
         const instructorNotifRef = push(ref(database, `notifications/${instructorId}`));
         await set(instructorNotifRef, {
             type: 'new_booking',
             bookingId: bookingRef.key,
-            message: `New booking request from ${currentUser.displayName}`,
+            message: `New booking from ${currentUser.displayName}
+Subject: ${subjectClass}
+Contact: ${studentMobile}
+Date: ${date} at ${time}
+${description ? 'Details: ' + description : ''}`,
             timestamp: Date.now(),
             read: false
         });
@@ -544,7 +585,7 @@ window.submitBooking = async function(instructorId) {
         await set(studentNotifRef, {
             type: 'booking_sent',
             bookingId: bookingRef.key,
-            message: `Booking request sent to ${instructor.name}. Waiting for confirmation.`,
+            message: `Booking request sent to ${instructor.name} (${specializationsDisplay}). Waiting for confirmation.`,
             timestamp: Date.now(),
             read: false
         });
@@ -582,10 +623,18 @@ document.getElementById('becomeInstructorBtn').addEventListener('click', () => {
                             <input type="text" id="instructorName" value="${currentUser.displayName}" required>
                         </div>
                         <div class="form-group">
-                            <label>Specialization *</label>
-                            <input type="text" id="instructorSpecialization" placeholder="Select from list or type your own" autocomplete="off" required list="specializationList">
-                            <datalist id="specializationList">${specializationOptions}</datalist>
-                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">💡 Type any subject if not in list</small>
+                            <label>Specializations (You can teach) *</label>
+                            <div id="specializationsContainer" style="max-height: 200px; overflow-y: auto; border: 2px solid var(--border); border-radius: var(--radius); padding: 12px;">
+                                ${specializations.map(spec => `
+                                    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
+                                        <input type="checkbox" class="spec-checkbox" value="${spec}" style="margin-right: 8px;">
+                                        ${spec}
+                                    </label>
+                                `).join('')}
+                            </div>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 8px;">Select all subjects you can teach</small>
+                            <input type="text" id="customSpecialization" placeholder="Add custom specialization" style="margin-top: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                            <button type="button" class="btn btn-secondary" onclick="addCustomSpec()" style="margin-top: 8px;">Add Custom</button>
                         </div>
                         <div class="form-group">
                             <label>Location (City) *</label>
@@ -626,9 +675,34 @@ document.getElementById('becomeInstructorBtn').addEventListener('click', () => {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 });
 
+window.addCustomSpec = function() {
+    const customInput = document.getElementById('customSpecialization');
+    const customValue = customInput.value.trim();
+    
+    if (!customValue) {
+        alert('Please enter a specialization');
+        return;
+    }
+    
+    const container = document.getElementById('specializationsContainer');
+    const newCheckbox = document.createElement('label');
+    newCheckbox.style.display = 'block';
+    newCheckbox.style.marginBottom = '8px';
+    newCheckbox.style.cursor = 'pointer';
+    newCheckbox.style.background = 'var(--bg-secondary)';
+    newCheckbox.style.padding = '4px 8px';
+    newCheckbox.style.borderRadius = '4px';
+    newCheckbox.innerHTML = `
+        <input type="checkbox" class="spec-checkbox" value="${customValue}" style="margin-right: 8px;" checked>
+        ${customValue} (Custom)
+    `;
+    
+    container.appendChild(newCheckbox);
+    customInput.value = '';
+}
+
 window.submitInstructorRegistration = async function() {
     const name = document.getElementById('instructorName').value.trim();
-    const specialization = document.getElementById('instructorSpecialization').value.trim();
     const location = document.getElementById('instructorLocation').value.trim();
     const mobile = document.getElementById('instructorMobile').value.trim();
     const age = document.getElementById('instructorAge').value;
@@ -636,7 +710,16 @@ window.submitInstructorRegistration = async function() {
     const hourlyRate = document.getElementById('instructorRate').value;
     const certifications = document.getElementById('instructorCertifications').value.trim();
     
-    if (!name || !specialization || !location || !mobile || !age || !experience || !hourlyRate) {
+    // Get selected specializations
+    const selectedSpecs = Array.from(document.querySelectorAll('.spec-checkbox:checked'))
+        .map(cb => cb.value);
+    
+    if (selectedSpecs.length === 0) {
+        alert('Please select at least one specialization');
+        return;
+    }
+    
+    if (!name || !location || !mobile || !age || !experience || !hourlyRate) {
         alert('Please fill all required fields');
         return;
     }
@@ -646,7 +729,8 @@ window.submitInstructorRegistration = async function() {
         await set(instructorRef, {
             userId: currentUser.uid,
             name: name,
-            specialization: specialization,
+            specializations: selectedSpecs,
+            specialization: selectedSpecs.join(', '), // For backward compatibility
             location: location,
             mobile: mobile,
             age: parseInt(age),
@@ -702,6 +786,11 @@ async function loadInstructorDashboard() {
         });
     }
     
+    // Display specializations
+    const specializationsDisplay = Array.isArray(instructorData.specializations) 
+        ? instructorData.specializations.join(', ') 
+        : instructorData.specialization;
+    
     const dashboard = document.getElementById('instructorDashboard');
     dashboard.innerHTML = `
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 32px;">
@@ -717,15 +806,11 @@ async function loadInstructorDashboard() {
                 <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Average Rating</div>
                 <div style="font-size: 36px; font-weight: 700;">⭐ ${avgRating}</div>
             </div>
-            <div style="background: linear-gradient(135deg, var(--accent), #be185d); color: white; padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow-lg);">
-                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Total Reviews</div>
-                <div style="font-size: 36px; font-weight: 700;">${totalRatings}</div>
-            </div>
         </div>
         <div style="background: white; padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow);">
             <h3 style="margin-bottom: 20px;">Your Profile Information</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div><strong>Specialization:</strong> ${instructorData.specialization}</div>
+                <div style="grid-column: 1 / -1;"><strong>Specializations:</strong> ${specializationsDisplay}</div>
                 <div><strong>Location:</strong> ${instructorData.location}</div>
                 <div><strong>Experience:</strong> ${instructorData.experience} years</div>
                 <div><strong>Hourly Rate:</strong> ₹${instructorData.hourlyRate}/hour</div>
@@ -746,26 +831,18 @@ async function loadInstructorProfile() {
     
     let avgRating = 0;
     let totalRatings = 0;
-    let ratingsHTML = '';
     
     if (instructorData.ratings) {
         const ratings = Object.values(instructorData.ratings);
         const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
         avgRating = (sum / ratings.length).toFixed(1);
         totalRatings = ratings.length;
-        
-        ratingsHTML = ratings.map(r => `
-            <div style="background: white; padding: 16px; border-radius: 8px; margin-bottom: 12px; box-shadow: var(--shadow);">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <div><strong>${r.studentName}</strong><div style="color: var(--warning); margin-top: 4px;">⭐ ${r.rating}/5</div></div>
-                    <div style="color: var(--text-light); font-size: 12px;">${new Date(r.timestamp).toLocaleDateString()}</div>
-                </div>
-                ${r.review ? `<p style="color: var(--text-secondary); margin-top: 8px;">"${r.review}"</p>` : ''}
-            </div>
-        `).join('');
-    } else {
-        ratingsHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No ratings yet</p>';
     }
+    
+    // Display specializations
+    const specializationsDisplay = Array.isArray(instructorData.specializations) 
+        ? instructorData.specializations.join(', ') 
+        : instructorData.specialization;
     
     const content = document.getElementById('instructorProfileContent');
     content.innerHTML = `
@@ -774,8 +851,8 @@ async function loadInstructorProfile() {
                 <img src="${currentUser.photoURL}" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--primary);">
                 <div>
                     <h2>${instructorData.name}</h2>
-                    <p style="color: var(--primary); font-weight: 600; margin: 8px 0;">${instructorData.specialization}</p>
-                    <div style="color: var(--warning);">⭐ ${avgRating} (${totalRatings} reviews)</div>
+                    <p style="color: var(--primary); font-weight: 600; margin: 8px 0;">${specializationsDisplay}</p>
+                    <div style="color: var(--warning); font-size: 24px;">⭐ ${avgRating}</div>
                 </div>
             </div>
             <button class="btn btn-primary" onclick="editInstructorProfile()">Edit Profile</button>
@@ -783,18 +860,13 @@ async function loadInstructorProfile() {
         <div style="background: white; padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 24px;">
             <h3 style="margin-bottom: 20px;">Profile Details</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div><strong>Specialization:</strong><br>${instructorData.specialization}</div>
+                <div style="grid-column: 1 / -1;"><strong>Specializations:</strong><br>${specializationsDisplay}</div>
                 <div><strong>Location:</strong><br>${instructorData.location}</div>
                 <div><strong>Experience:</strong><br>${instructorData.experience} years</div>
-                <div><strong>Age:</strong><br>${instructorData.age}</div>
                 <div><strong>Hourly Rate:</strong><br>₹${instructorData.hourlyRate}/hour</div>
                 <div><strong>Mobile:</strong><br>${instructorData.mobile}</div>
             </div>
             ${instructorData.certifications ? `<div style="margin-top: 20px;"><strong>Certifications:</strong><br><p style="color: var(--text-secondary); margin-top: 8px;">${instructorData.certifications}</p></div>` : ''}
-        </div>
-        <div style="background: white; padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow);">
-            <h3 style="margin-bottom: 20px;">Reviews & Ratings</h3>
-            ${ratingsHTML}
         </div>
     `;
 }
@@ -977,6 +1049,12 @@ function displayBookings(bookings, containerId, isInstructor) {
             actionButtons = `<button class="btn btn-primary" onclick="showRatingModal('${booking.id}', '${booking.instructorId}', '${booking.instructorName}')">Rate Instructor</button>`;
         }
         
+        // Show student contact for instructors
+        let contactInfo = '';
+        if (isInstructor && booking.studentMobile) {
+            contactInfo = `<p><strong>Student Contact:</strong> ${booking.studentMobile}</p>`;
+        }
+        
         return `
             <div class="booking-card">
                 <div class="booking-header">
@@ -987,8 +1065,10 @@ function displayBookings(bookings, containerId, isInstructor) {
                     <span class="booking-status ${statusClass}">${booking.status}</span>
                 </div>
                 <div style="margin: 16px 0;">
+                    ${booking.subjectClass ? `<p><strong>Subject/Class:</strong> ${booking.subjectClass}</p>` : ''}
                     <p><strong>Location:</strong> ${booking.address}</p>
-                    <p><strong>Description:</strong> ${booking.description}</p>
+                    ${booking.description ? `<p><strong>Details:</strong> ${booking.description}</p>` : ''}
+                    ${contactInfo}
                     <p><strong>Total Cost:</strong> ₹${booking.totalCost}</p>
                 </div>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">${actionButtons}</div>
