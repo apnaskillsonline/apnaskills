@@ -186,8 +186,14 @@ async function loadCategories() {
 }
 
 window.filterByCategory = function(category) {
-    document.getElementById('studentSpecializationInput').value = category;
-    document.getElementById('studentSearchForm').dispatchEvent(new Event('submit'));
+    filteredInstructors = allInstructors.filter(instructor => {
+        const specializationMatch = instructor.specialization.toLowerCase().includes(category.toLowerCase()) ||
+            (Array.isArray(instructor.specializations) && 
+             instructor.specializations.some(s => s.toLowerCase().includes(category.toLowerCase())));
+        return specializationMatch;
+    });
+    
+    showSearchResultsModal(filteredInstructors);
 }
 
 // ==================== LOAD INSTRUCTORS ====================
@@ -236,8 +242,8 @@ function displayInstructors(instructors) {
     }
     
     grid.innerHTML = instructors.map(instructor => {
-        // Display multiple specializations
-        const specializationsDisplay = Array.isArray(instructor.specializations) 
+        // Display multiple subjects
+        const subjectsDisplay = Array.isArray(instructor.specializations) 
             ? instructor.specializations.join(', ') 
             : instructor.specialization;
         
@@ -246,8 +252,8 @@ function displayInstructors(instructors) {
             <div class="tutor-header">
                 <img src="${instructor.photoURL || 'https://via.placeholder.com/80'}" alt="${instructor.name}" class="tutor-avatar" onerror="this.src='https://via.placeholder.com/80?text=Avatar'">
                 <div class="tutor-info">
+                    <div class="tutor-specialization" style="margin-bottom: 8px;">${subjectsDisplay}</div>
                     <h3>${instructor.name}</h3>
-                    <div class="tutor-specialization">${specializationsDisplay}</div>
                     <div class="tutor-rating">⭐ ${instructor.avgRating}</div>
                 </div>
             </div>
@@ -341,7 +347,7 @@ document.getElementById('studentSearchForm').addEventListener('submit', (e) => {
     const specialization = specializationInput.value.toLowerCase().trim();
     
     if (!location && !specialization) {
-        alert('Please enter location or specialization to search');
+        alert('Please enter location or subject to search');
         return;
     }
     
@@ -351,19 +357,60 @@ document.getElementById('studentSearchForm').addEventListener('submit', (e) => {
         const locationMatch = !location || instructor.location.toLowerCase().includes(location);
         const specializationMatch = !specialization || 
             instructor.specialization.toLowerCase().includes(specialization) ||
-            instructor.name.toLowerCase().includes(specialization);
+            instructor.name.toLowerCase().includes(specialization) ||
+            (Array.isArray(instructor.specializations) && 
+             instructor.specializations.some(s => s.toLowerCase().includes(specialization)));
         return locationMatch && specializationMatch;
     });
     
-    displayInstructors(filteredInstructors);
+    showSearchResultsModal(filteredInstructors);
     locationSuggestions.classList.add('hidden');
     specializationSuggestions.classList.add('hidden');
-    
-    setTimeout(() => {
-        const tutorsSection = document.querySelector('.tutors-section');
-        if (tutorsSection) tutorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
 });
+
+// Show search results in modal
+function showSearchResultsModal(instructors) {
+    const modalHTML = `
+        <div class="modal" id="searchResultsModal">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">Search Results (${instructors.length} found)</h2>
+                    <button class="modal-close" onclick="closeModal('searchResultsModal')">&times;</button>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    ${instructors.length === 0 ? 
+                        '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>No instructors found matching your criteria</p></div>' :
+                        instructors.map(instructor => {
+                            const subjectsDisplay = Array.isArray(instructor.specializations) 
+                                ? instructor.specializations.join(', ') 
+                                : instructor.specialization;
+                            
+                            return `
+                                <div class="search-result-item" onclick="closeModal('searchResultsModal'); viewInstructorDetails('${instructor.id}')">
+                                    <div style="display: flex; gap: 16px; align-items: center;">
+                                        <img src="${instructor.photoURL || 'https://via.placeholder.com/60'}" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--primary);" onerror="this.src='https://via.placeholder.com/60?text=Avatar'">
+                                        <div style="flex: 1;">
+                                            <h3 style="margin-bottom: 4px; font-size: 18px;">${instructor.name}</h3>
+                                            <div style="color: var(--primary); font-size: 14px; margin-bottom: 4px;">${subjectsDisplay}</div>
+                                            <div style="display: flex; gap: 16px; font-size: 14px; color: var(--text-secondary);">
+                                                <span>⭐ ${instructor.avgRating}</span>
+                                                <span>📍 ${instructor.location}</span>
+                                                <span>₹${instructor.hourlyRate}/hr</span>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-primary" onclick="event.stopPropagation(); closeModal('searchResultsModal'); showBookingModal('${instructor.id}')">Book</button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')
+                    }
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
 
 document.getElementById('studentClearSearchBtn').addEventListener('click', () => {
     locationInput.value = '';
@@ -379,8 +426,8 @@ window.viewInstructorDetails = async function(instructorId) {
     const instructor = allInstructors.find(t => t.id === instructorId);
     if (!instructor) return;
     
-    // Display specializations
-    const specializationsDisplay = Array.isArray(instructor.specializations) 
+    // Display subjects
+    const subjectsDisplay = Array.isArray(instructor.specializations) 
         ? instructor.specializations.join(', ') 
         : instructor.specialization;
     
@@ -396,7 +443,7 @@ window.viewInstructorDetails = async function(instructorId) {
                         <img src="${instructor.photoURL || 'https://via.placeholder.com/120'}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary);" onerror="this.src='https://via.placeholder.com/120?text=Avatar'">
                         <div style="flex: 1;">
                             <h2 style="margin-bottom: 8px;">${instructor.name}</h2>
-                            <p style="color: var(--primary); font-weight: 600; margin-bottom: 8px;">${specializationsDisplay}</p>
+                            <p style="color: var(--primary); font-weight: 600; margin-bottom: 8px;">${subjectsDisplay}</p>
                             <div style="color: var(--warning); margin-bottom: 8px; font-size: 24px;">⭐ ${instructor.avgRating}</div>
                             <div style="font-size: 24px; font-weight: 700; color: var(--primary);">₹${instructor.hourlyRate}/hour</div>
                         </div>
@@ -623,7 +670,7 @@ document.getElementById('becomeInstructorBtn').addEventListener('click', () => {
                             <input type="text" id="instructorName" value="${currentUser.displayName}" required>
                         </div>
                         <div class="form-group">
-                            <label>Specializations (You can teach) *</label>
+                            <label>Subjects (You can teach) *</label>
                             <div id="specializationsContainer" style="max-height: 200px; overflow-y: auto; border: 2px solid var(--border); border-radius: var(--radius); padding: 12px;">
                                 ${specializations.map(spec => `
                                     <label style="display: block; margin-bottom: 8px; cursor: pointer;">
@@ -633,7 +680,7 @@ document.getElementById('becomeInstructorBtn').addEventListener('click', () => {
                                 `).join('')}
                             </div>
                             <small style="color: var(--text-secondary); display: block; margin-top: 8px;">Select all subjects you can teach</small>
-                            <input type="text" id="customSpecialization" placeholder="Add custom specialization" style="margin-top: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
+                            <input type="text" id="customSpecialization" placeholder="Add custom subject" style="margin-top: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 4px; width: 100%;">
                             <button type="button" class="btn btn-secondary" onclick="addCustomSpec()" style="margin-top: 8px;">Add Custom</button>
                         </div>
                         <div class="form-group">
@@ -680,7 +727,7 @@ window.addCustomSpec = function() {
     const customValue = customInput.value.trim();
     
     if (!customValue) {
-        alert('Please enter a specialization');
+        alert('Please enter a subject');
         return;
     }
     
@@ -715,7 +762,7 @@ window.submitInstructorRegistration = async function() {
         .map(cb => cb.value);
     
     if (selectedSpecs.length === 0) {
-        alert('Please select at least one specialization');
+        alert('Please select at least one subject');
         return;
     }
     
@@ -810,7 +857,7 @@ async function loadInstructorDashboard() {
         <div style="background: white; padding: 32px; border-radius: var(--radius); box-shadow: var(--shadow);">
             <h3 style="margin-bottom: 20px;">Your Profile Information</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div style="grid-column: 1 / -1;"><strong>Specializations:</strong> ${specializationsDisplay}</div>
+                <div style="grid-column: 1 / -1;"><strong>Subjects:</strong> ${specializationsDisplay}</div>
                 <div><strong>Location:</strong> ${instructorData.location}</div>
                 <div><strong>Experience:</strong> ${instructorData.experience} years</div>
                 <div><strong>Hourly Rate:</strong> ₹${instructorData.hourlyRate}/hour</div>
@@ -820,7 +867,41 @@ async function loadInstructorDashboard() {
 }
 
 // Continued with instructor features, bookings, notifications, etc...
-// ==================== PART 4: BOOKINGS, NOTIFICATIONS & UTILITIES ====================
+// ==================== INSTRUCTOR PROFILE ====================
+async function loadInstructorProfile() {
+    const instructorRef = ref(database, `instructors/${currentUser.uid}`);
+    const snapshot = await get(instructorRef);
+    const instructorData = snapshot.val();
+    
+    let avgRating = 0;
+    let totalRatings = 0;
+    
+    if (instructorData.ratings) {
+        const ratings = Object.values(instructorData.ratings);
+        const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
+        avgRating = (sum / ratings.length).toFixed(1);
+        totalRatings = ratings.length;
+    }
+    
+    // Display subjects
+    const subjectsDisplay = Array.isArray(instructorData.specializations) 
+        ? instructorData.specializations.join(', ') 
+        : instructorData.specialization;
+    
+    const content = document.getElementById('instructorProfileContent');
+    content.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 32px; border-radius: var(--radius); margin-bottom: 24px;">
+            <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+                <img src="${currentUser.photoURL}" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--primary);">
+                <div>
+                    <h2>${instructorData.name}</h2>
+                    <p style="color: var(--primary); font-weight: 600; margin: 8px 0;">${subjectsDisplay}</p>
+                    <div style="color: var(--warning); font-size: 24px;">⭐ ${avgRating}</div>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="editInstructorProfile()">Edit Profile</button>
+        </div>
+        <div style="background: white; padding: 32px; border-radius: var(// ==================== PART 4: BOOKINGS, NOTIFICATIONS & UTILITIES ====================
 // NOTE: This should be appended after Part 3
 
 // ==================== INSTRUCTOR PROFILE ====================
