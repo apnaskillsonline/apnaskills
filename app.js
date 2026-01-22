@@ -1,8 +1,9 @@
 // ==================== FIREBASE INITIALIZATION ====================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-import { getDatabase, ref, set, get, push, update, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+import { getDatabase, ref, set, get, push, update, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
+// Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBj8NFx3wd1PFXR37X4JcE9j4N9pJGnZ8A",
     authDomain: "apnaskills-ef242.firebaseapp.com",
@@ -13,6 +14,7 @@ const firebaseConfig = {
     appId: "1:120699280754:web:1aff20056bf990f67c11eb"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
@@ -21,135 +23,740 @@ const provider = new GoogleAuthProvider();
 // ==================== GLOBAL STATE ====================
 let currentUser = null;
 let currentUserData = null;
-let allInstructors = [];
-let filteredInstructors = [];
+let allTutors = [];
+let filteredTutors = [];
 let isSearchActive = false;
 
-// Indian Cities
-const indianCities = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Kolkata', 'Surat', 'Pune', 'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Bhopal', 'Visakhapatnam', 'Pimpri-Chinchwad', 'Patna', 'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 'Rajkot', 'Kalyan-Dombivali', 'Vasai-Virar', 'Varanasi', 'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar', 'Navi Mumbai', 'Allahabad', 'Ranchi', 'Howrah', 'Coimbatore', 'Jabalpur', 'Gwalior', 'Vijayawada', 'Jodhpur', 'Madurai', 'Raipur', 'Kota', 'Chandigarh', 'Guwahati', 'Solapur', 'Hubli-Dharwad', 'Mysore', 'Tiruchirappalli', 'Bareilly', 'Aligarh', 'Tiruppur', 'Moradabad', 'Jalandhar', 'Bhubaneswar', 'Salem', 'Warangal', 'Guntur', 'Bhiwandi', 'Saharanpur', 'Gorakhpur', 'Bikaner', 'Amravati', 'Noida', 'Jamshedpur', 'Bhilai', 'Cuttack', 'Firozabad', 'Kochi', 'Nellore', 'Bhavnagar', 'Dehradun', 'Durgapur', 'Asansol', 'Rourkela', 'Nanded', 'Kolhapur', 'Ajmer', 'Akola', 'Gulbarga', 'Jamnagar', 'Ujjain', 'Loni', 'Siliguri', 'Jhansi', 'Ulhasnagar', 'Jammu', 'Sangli-Miraj', 'Mangalore', 'Erode', 'Belgaum', 'Ambattur', 'Tirunelveli', 'Malegaon', 'Gaya', 'Jalgaon', 'Udaipur'];
+// Indian Cities List
+const indianCities = [
+    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Kolkata', 'Surat', 'Pune', 'Jaipur',
+    'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Bhopal', 'Visakhapatnam', 'Pimpri-Chinchwad', 'Patna', 'Vadodara',
+    'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 'Rajkot', 'Kalyan-Dombivali', 'Vasai-Virar', 'Varanasi',
+    'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar', 'Navi Mumbai', 'Allahabad', 'Ranchi', 'Howrah', 'Coimbatore', 'Jabalpur',
+    'Gwalior', 'Vijayawada', 'Jodhpur', 'Madurai', 'Raipur', 'Kota', 'Chandigarh', 'Guwahati', 'Solapur', 'Hubli-Dharwad',
+    'Mysore', 'Tiruchirappalli', 'Bareilly', 'Aligarh', 'Tiruppur', 'Moradabad', 'Jalandhar', 'Bhubaneswar', 'Salem', 'Warangal',
+    'Guntur', 'Bhiwandi', 'Saharanpur', 'Gorakhpur', 'Bikaner', 'Amravati', 'Noida', 'Jamshedpur', 'Bhilai', 'Cuttack',
+    'Firozabad', 'Kochi', 'Nellore', 'Bhavnagar', 'Dehradun', 'Durgapur', 'Asansol', 'Rourkela', 'Nanded', 'Kolhapur',
+    'Ajmer', 'Akola', 'Gulbarga', 'Jamnagar', 'Ujjain', 'Loni', 'Siliguri', 'Jhansi', 'Ulhasnagar', 'Jammu',
+    'Sangli-Miraj', 'Mangalore', 'Erode', 'Belgaum', 'Ambattur', 'Tirunelveli', 'Malegaon', 'Gaya', 'Jalgaon', 'Udaipur'
+];
 
-// Specializations
-const specializations = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Hindi', 'Computer Science', 'Programming', 'Web Development', 'Data Science', 'Machine Learning', 'Artificial Intelligence', 'Python', 'Java', 'JavaScript', 'C++', 'Science', 'Social Studies', 'History', 'Geography', 'Economics', 'Commerce', 'Accountancy', 'Business Studies', 'Statistics', 'Music', 'Vocal Music', 'Guitar', 'Piano', 'Keyboard', 'Drums', 'Classical Music', 'Dance', 'Classical Dance', 'Kathak', 'Bharatanatyam', 'Contemporary Dance', 'Hip Hop', 'Art', 'Drawing', 'Painting', 'Sketching', 'Craft', 'French', 'German', 'Spanish', 'Japanese', 'Korean', 'Foreign Languages', 'English Spoken', 'IELTS', 'TOEFL', 'Personality Development', 'Public Speaking', 'Communication Skills', 'Yoga', 'Fitness', 'Meditation', 'Chess', 'Coding', 'Robotics', 'Electronics', 'Photography', 'Video Editing', 'Graphic Design', 'Digital Marketing', 'Content Writing', 'Creative Writing'];
+// Specializations List
+const specializations = [
+    'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Hindi', 'Computer Science', 
+    'Programming', 'Web Development', 'Data Science', 'Machine Learning', 'Artificial Intelligence',
+    'Python', 'Java', 'JavaScript', 'C++', 'Science', 'Social Studies', 'History', 'Geography',
+    'Economics', 'Commerce', 'Accountancy', 'Business Studies', 'Statistics', 'Music', 'Vocal Music',
+    'Guitar', 'Piano', 'Keyboard', 'Drums', 'Classical Music', 'Dance', 'Classical Dance', 'Kathak',
+    'Bharatanatyam', 'Contemporary Dance', 'Hip Hop', 'Art', 'Drawing', 'Painting', 'Sketching',
+    'Craft', 'French', 'German', 'Spanish', 'Japanese', 'Korean', 'Foreign Languages', 
+    'English Spoken', 'IELTS', 'TOEFL', 'Personality Development', 'Public Speaking', 'Communication Skills',
+    'Yoga', 'Fitness', 'Meditation', 'Chess', 'Coding', 'Robotics', 'Electronics', 'Photography',
+    'Video Editing', 'Graphic Design', 'Digital Marketing', 'Content Writing', 'Creative Writing'
+];
+
 
 // ==================== AUTHENTICATION ====================
+
+// Google Sign In
 document.getElementById('googleLoginBtn').addEventListener('click', async () => {
     try {
         const result = await signInWithPopup(auth, provider);
         currentUser = result.user;
         
+        // Check if user exists in database
         const userRef = ref(database, `users/${currentUser.uid}`);
         const snapshot = await get(userRef);
         
         if (!snapshot.exists()) {
+            // Create new user in database
             await set(userRef, {
                 uid: currentUser.uid,
                 email: currentUser.email,
                 displayName: currentUser.displayName,
                 photoURL: currentUser.photoURL,
-                isInstructor: false,
+                isTutor: false,
                 createdAt: Date.now()
             });
             
+            // Create welcome notification
             const notifRef = push(ref(database, `notifications/${currentUser.uid}`));
             await set(notifRef, {
                 type: 'welcome',
-                message: 'Welcome to ApnaSkills! Start exploring instructors and book your first session.',
+                message: 'Welcome to ApnaSkills! Start exploring tutors and book your first session.',
                 timestamp: Date.now(),
                 read: false
             });
         }
+        
     } catch (error) {
         console.error('Login error:', error);
         alert('Failed to login. Please try again.');
     }
 });
 
+// Auth state observer
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
+        
+        // Load user data
         const userRef = ref(database, `users/${user.uid}`);
         const snapshot = await get(userRef);
         currentUserData = snapshot.val();
         
+        // Show main app
         document.getElementById('loginPage').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
         
-        if (currentUserData.isInstructor) {
-            // Show instructor interface
-            document.getElementById('instructorApp').classList.remove('hidden');
-            document.getElementById('instructorUserName').textContent = user.displayName;
-            document.getElementById('instructorUserAvatar').src = user.photoURL;
-            await loadInstructorDashboard();
-            await loadInstructorNotifications();
-            setupInstructorNotificationListener();
+        // Update UI with user info
+        document.getElementById('userName').textContent = user.displayName;
+        document.getElementById('userAvatar').src = user.photoURL;
+        
+        // Load initial data
+        await loadTutors();
+        await loadNotifications();
+        setupNotificationListener();
+        
+        // Update user role display and hide banner if tutor
+        if (currentUserData.isTutor) {
+            document.getElementById('userRole').textContent = '👨‍🏫 Tutor';
+            const banner = document.getElementById('becomeTutorBanner');
+            if (banner) {
+                banner.style.display = 'none';
+            }
         } else {
-            // Show student interface
-            document.getElementById('studentApp').classList.remove('hidden');
-            document.getElementById('studentUserName').textContent = user.displayName;
-            document.getElementById('studentUserAvatar').src = user.photoURL;
-            await loadInstructors();
-            await loadCategories();
-            await loadStudentNotifications();
-            setupStudentNotificationListener();
+            document.getElementById('userRole').textContent = '👨‍🎓 Student';
         }
         
-        setTimeout(() => checkPendingRatings(), 2000);
+        // Check for pending rating popup on login
+        setTimeout(() => {
+            checkPendingRatings();
+        }, 2000);
+        
     } else {
+        // User logged out
         document.getElementById('loginPage').classList.remove('hidden');
-        document.getElementById('studentApp').classList.add('hidden');
-        document.getElementById('instructorApp').classList.add('hidden');
+        document.getElementById('mainApp').classList.add('hidden');
     }
 });
 
-document.getElementById('studentLogoutBtn').addEventListener('click', () => signOut(auth));
-document.getElementById('instructorLogoutBtn').addEventListener('click', () => signOut(auth));
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try {
+        await signOut(auth);
+        currentUser = null;
+        currentUserData = null;
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+});
 
-// ==================== STUDENT NAVIGATION ====================
-document.querySelectorAll('#studentApp .nav-link').forEach(link => {
+// ==================== NAVIGATION ====================
+
+document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
         const page = link.dataset.page;
-        document.querySelectorAll('#studentApp .nav-link').forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-        document.querySelectorAll('#studentApp .page-content').forEach(p => p.classList.add('hidden'));
-        
-        if (page === 'home') {
-            document.getElementById('studentHomePage').classList.remove('hidden');
-        } else if (page === 'bookings') {
-            document.getElementById('studentBookingsPage').classList.remove('hidden');
-            loadStudentBookings();
-        } else if (page === 'notifications') {
-            document.getElementById('studentNotificationsPage').classList.remove('hidden');
-            markStudentNotificationsAsRead();
-        }
+        navigateToPage(page);
     });
 });
 
-// ==================== INSTRUCTOR NAVIGATION ====================
-document.querySelectorAll('#instructorApp .nav-link').forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const page = link.dataset.page;
-        document.querySelectorAll('#instructorApp .nav-link').forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-        document.querySelectorAll('#instructorApp .page-content').forEach(p => p.classList.add('hidden'));
+function navigateToPage(page) {
+    // Update active nav link
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    const pageLink = document.querySelector(`[data-page="${page}"]`);
+    if (pageLink) {
+        pageLink.classList.add('active');
+    }
+    
+    // Hide all pages
+    document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+    
+    // Show selected page
+    switch(page) {
+        case 'home':
+            document.getElementById('homePage').classList.remove('hidden');
+            break;
+        case 'bookings':
+            document.getElementById('bookingsPage').classList.remove('hidden');
+            loadBookings();
+            break;
+        case 'notifications':
+            document.getElementById('notificationsPage').classList.remove('hidden');
+            markNotificationsAsRead();
+            break;
+    }
+}
+
+// ==================== LOAD TUTORS ====================
+
+async function loadTutors() {
+    const tutorsRef = ref(database, 'tutors');
+    const snapshot = await get(tutorsRef);
+    
+    if (snapshot.exists()) {
+        allTutors = [];
+        snapshot.forEach(childSnapshot => {
+            const tutor = childSnapshot.val();
+            tutor.id = childSnapshot.key;
+            
+            // Calculate average rating
+            if (tutor.ratings) {
+                const ratings = Object.values(tutor.ratings);
+                const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
+                tutor.avgRating = (sum / ratings.length).toFixed(1);
+                tutor.totalRatings = ratings.length;
+            } else {
+                tutor.avgRating = 0;
+                tutor.totalRatings = 0;
+            }
+            
+            allTutors.push(tutor);
+        });
         
-        if (page === 'instructor-home') {
-            document.getElementById('instructorHomePage').classList.remove('hidden');
-            loadInstructorDashboard();
-        } else if (page === 'instructor-bookings') {
-            document.getElementById('instructorBookingsPage').classList.remove('hidden');
-            loadInstructorBookings();
-        } else if (page === 'instructor-profile') {
-            document.getElementById('instructorProfilePage').classList.remove('hidden');
-            loadInstructorProfile();
-        } else if (page === 'instructor-notifications') {
-            document.getElementById('instructorNotificationsPage').classList.remove('hidden');
-            markInstructorNotificationsAsRead();
+        displayTutors(allTutors);
+    } else {
+        document.getElementById('tutorsGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎓</div><p>No tutors available yet. Be the first to register!</p></div>';
+    }
+}
+
+function displayTutors(tutors) {
+    const grid = document.getElementById('tutorsGrid');
+    
+    if (tutors.length === 0) {
+        if (isSearchActive) {
+            grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>No tutors found matching your search criteria. Try different keywords or <button class="btn btn-primary" onclick="document.getElementById(\'clearSearchBtn\').click()">clear search</button></p></div>';
+        } else {
+            grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎓</div><p>No tutors available yet. Be the first to register as a tutor!</p></div>';
         }
+        return;
+    }
+    
+    grid.innerHTML = tutors.map(tutor => `
+        <div class="tutor-card" onclick="viewTutorDetails('${tutor.id}')">
+            <div class="tutor-header">
+                <img src="${tutor.photoURL || 'https://via.placeholder.com/80'}" alt="${tutor.name}" class="tutor-avatar" onerror="this.src='https://via.placeholder.com/80?text=Avatar'">
+                <div class="tutor-info">
+                    <h3>${tutor.name}</h3>
+                    <div class="tutor-specialization">${tutor.specialization}</div>
+                    <div class="tutor-rating">
+                        ⭐ ${tutor.avgRating} (${tutor.totalRatings} reviews)
+                    </div>
+                </div>
+            </div>
+            <div class="tutor-details">
+                <div class="tutor-detail-item">
+                    <span class="tutor-detail-label">Experience</span>
+                    <span class="tutor-detail-value">${tutor.experience} years</span>
+                </div>
+                <div class="tutor-detail-item">
+                    <span class="tutor-detail-label">Location</span>
+                    <span class="tutor-detail-value">${tutor.location}</span>
+                </div>
+            </div>
+            <div class="tutor-price">₹${tutor.hourlyRate}/hour</div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="event.stopPropagation(); showBookingModal('${tutor.id}')">Book Now</button>
+        </div>
+    `).join('');
+}
+
+function formatSpecialization(spec) {
+    // Return as-is since we're now using natural language
+    return spec;
+}
+
+// ==================== SEARCH FUNCTIONALITY ====================
+
+// Setup autocomplete for location
+const locationInput = document.getElementById('locationInput');
+const locationSuggestions = document.getElementById('locationSuggestions');
+
+locationInput.addEventListener('input', (e) => {
+    const value = e.target.value.toLowerCase().trim();
+    
+    if (value.length === 0) {
+        locationSuggestions.classList.add('hidden');
+        return;
+    }
+    
+    // Filter cities that match
+    const matches = indianCities.filter(city => 
+        city.toLowerCase().includes(value)
+    );
+    
+    if (matches.length === 0) {
+        // Show custom option
+        locationSuggestions.innerHTML = `
+            <div class="suggestion-item custom-option" data-value="${e.target.value}">
+                ✏️ Use "${e.target.value}"
+            </div>
+        `;
+        locationSuggestions.classList.remove('hidden');
+    } else {
+        // Show matching cities
+        locationSuggestions.innerHTML = matches.slice(0, 10).map(city => `
+            <div class="suggestion-item" data-value="${city}">${city}</div>
+        `).join('');
+        
+        // Add custom option at the end
+        locationSuggestions.innerHTML += `
+            <div class="suggestion-item custom-option" data-value="${e.target.value}">
+                ✏️ Use "${e.target.value}"
+            </div>
+        `;
+        locationSuggestions.classList.remove('hidden');
+    }
+    
+    // Add click handlers
+    document.querySelectorAll('#locationSuggestions .suggestion-item').forEach(item => {
+        item.addEventListener('click', () => {
+            locationInput.value = item.dataset.value;
+            locationSuggestions.classList.add('hidden');
+        });
     });
 });
 
-console.log('ApnaSkills Platform Loaded Successfully!');
+// Setup autocomplete for specialization
+const specializationInput = document.getElementById('specializationInput');
+const specializationSuggestions = document.getElementById('specializationSuggestions');
+
+specializationInput.addEventListener('input', (e) => {
+    const value = e.target.value.toLowerCase().trim();
+    
+    if (value.length === 0) {
+        specializationSuggestions.classList.add('hidden');
+        return;
+    }
+    
+    // Filter specializations that match
+    const matches = specializations.filter(spec => 
+        spec.toLowerCase().includes(value)
+    );
+    
+    if (matches.length === 0) {
+        // Show custom option
+        specializationSuggestions.innerHTML = `
+            <div class="suggestion-item custom-option" data-value="${e.target.value}">
+                ✏️ Use "${e.target.value}"
+            </div>
+        `;
+        specializationSuggestions.classList.remove('hidden');
+    } else {
+        // Show matching specializations
+        specializationSuggestions.innerHTML = matches.slice(0, 10).map(spec => `
+            <div class="suggestion-item" data-value="${spec}">${spec}</div>
+        `).join('');
+        
+        // Add custom option at the end
+        specializationSuggestions.innerHTML += `
+            <div class="suggestion-item custom-option" data-value="${e.target.value}">
+                ✏️ Use "${e.target.value}"
+            </div>
+        `;
+        specializationSuggestions.classList.remove('hidden');
+    }
+    
+    // Add click handlers
+    document.querySelectorAll('#specializationSuggestions .suggestion-item').forEach(item => {
+        item.addEventListener('click', () => {
+            specializationInput.value = item.dataset.value;
+            specializationSuggestions.classList.add('hidden');
+        });
+    });
+});
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.input-group')) {
+        locationSuggestions.classList.add('hidden');
+        specializationSuggestions.classList.add('hidden');
+    }
+});
+
+// Handle search form submission
+document.getElementById('searchForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const location = locationInput.value.toLowerCase().trim();
+    const specialization = specializationInput.value.toLowerCase().trim();
+    
+    if (!location && !specialization) {
+        alert('Please enter location or specialization to search');
+        return;
+    }
+    
+    isSearchActive = true;
+    
+    filteredTutors = allTutors.filter(tutor => {
+        const locationMatch = !location || tutor.location.toLowerCase().includes(location);
+        const specializationMatch = !specialization || 
+            tutor.specialization.toLowerCase().includes(specialization) ||
+            tutor.name.toLowerCase().includes(specialization);
+        return locationMatch && specializationMatch;
+    });
+    
+    displayTutors(filteredTutors);
+    
+    // Hide suggestions
+    locationSuggestions.classList.add('hidden');
+    specializationSuggestions.classList.add('hidden');
+    
+    // Scroll to tutors section with delay to ensure DOM is updated
+    setTimeout(() => {
+        const tutorsSection = document.querySelector('.tutors-section');
+        if (tutorsSection) {
+            tutorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 100);
+});
+
+// Clear search button
+document.getElementById('clearSearchBtn').addEventListener('click', () => {
+    locationInput.value = '';
+    specializationInput.value = '';
+    isSearchActive = false;
+    displayTutors(allTutors);
+    locationSuggestions.classList.add('hidden');
+    specializationSuggestions.classList.add('hidden');
+});
+
+// ==================== TUTOR DETAILS MODAL ====================
+
+window.viewTutorDetails = async function(tutorId) {
+    const tutor = allTutors.find(t => t.id === tutorId);
+    if (!tutor) return;
+    
+    // Get ratings
+    let ratingsHTML = '';
+    if (tutor.ratings) {
+        const ratingsArray = Object.values(tutor.ratings);
+        ratingsHTML = ratingsArray.map(r => `
+            <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <div style="color: var(--warning);">⭐ ${r.rating}/5</div>
+                    <div style="color: var(--text-light); font-size: 12px;">${new Date(r.timestamp).toLocaleDateString()}</div>
+                </div>
+                ${r.review ? `<p style="color: var(--text-secondary);">${r.review}</p>` : ''}
+            </div>
+        `).join('');
+    } else {
+        ratingsHTML = '<p style="color: var(--text-secondary);">No reviews yet</p>';
+    }
+    
+    const modalHTML = `
+        <div class="modal" id="tutorDetailsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Tutor Details</h2>
+                    <button class="modal-close" onclick="closeModal('tutorDetailsModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+                        <img src="${tutor.photoURL || 'https://via.placeholder.com/120'}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary);" onerror="this.src='https://via.placeholder.com/120?text=Avatar'">
+                        <div style="flex: 1;">
+                            <h2 style="margin-bottom: 8px;">${tutor.name}</h2>
+                            <p style="color: var(--primary); font-weight: 600; margin-bottom: 8px;">${tutor.specialization}</p>
+                            <div style="color: var(--warning); margin-bottom: 8px;">⭐ ${tutor.avgRating} (${tutor.totalRatings} reviews)</div>
+                            <div style="font-size: 24px; font-weight: 700; color: var(--primary);">₹${tutor.hourlyRate}/hour</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <h3 style="margin-bottom: 12px;">About</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div><strong>Experience:</strong> ${tutor.experience} years</div>
+                            <div><strong>Age:</strong> ${tutor.age}</div>
+                            <div><strong>Location:</strong> ${tutor.location}</div>
+                            <div><strong>Email:</strong> ${tutor.email}</div>
+                        </div>
+                    </div>
+                    
+                    ${tutor.certifications ? `
+                    <div style="margin-bottom: 24px;">
+                        <h3 style="margin-bottom: 12px;">Certifications</h3>
+                        <p style="color: var(--text-secondary);">${tutor.certifications}</p>
+                    </div>
+                    ` : ''}
+                    
+                    <div>
+                        <h3 style="margin-bottom: 12px;">Reviews</h3>
+                        ${ratingsHTML}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('tutorDetailsModal')">Close</button>
+                    <button class="btn btn-primary" onclick="closeModal('tutorDetailsModal'); showBookingModal('${tutorId}')">Book Session</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// ==================== BOOKING MODAL ====================
+
+window.showBookingModal = function(tutorId) {
+    const tutor = allTutors.find(t => t.id === tutorId);
+    if (!tutor) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    const modalHTML = `
+        <div class="modal" id="bookingModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Book Session with ${tutor.name}</h2>
+                    <button class="modal-close" onclick="closeModal('bookingModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="bookingForm">
+                        <div class="form-group">
+                            <label>Your Address *</label>
+                            <input type="text" id="bookingAddress" required placeholder="Enter your full address">
+                        </div>
+                        <div class="form-group">
+                            <label>Preferred Date *</label>
+                            <input type="date" id="bookingDate" required min="${today}">
+                        </div>
+                        <div class="form-group">
+                            <label>Preferred Time *</label>
+                            <input type="time" id="bookingTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Session Duration (hours) *</label>
+                            <input type="number" id="bookingHours" min="1" max="8" value="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description of your needs *</label>
+                            <textarea id="bookingDescription" required placeholder="Tell the tutor what you need help with..."></textarea>
+                        </div>
+                        <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px; margin-top: 16px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 600;">
+                                <span>Estimated Cost:</span>
+                                <span style="color: var(--primary);">₹<span id="estimatedCost">${tutor.hourlyRate}</span></span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('bookingModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitBooking('${tutorId}')">Confirm Booking</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Update cost on hours change
+    document.getElementById('bookingHours').addEventListener('input', (e) => {
+        const hours = parseInt(e.target.value) || 1;
+        document.getElementById('estimatedCost').textContent = hours * tutor.hourlyRate;
+    });
+}
+
+window.submitBooking = async function(tutorId) {
+    const tutor = allTutors.find(t => t.id === tutorId);
+    const address = document.getElementById('bookingAddress').value;
+    const date = document.getElementById('bookingDate').value;
+    const time = document.getElementById('bookingTime').value;
+    const hours = parseInt(document.getElementById('bookingHours').value);
+    const description = document.getElementById('bookingDescription').value;
+    
+    if (!address || !date || !time || !hours || !description) {
+        alert('Please fill all fields');
+        return;
+    }
+    
+    try {
+        // Create booking
+        const bookingRef = push(ref(database, 'bookings'));
+        const bookingData = {
+            studentId: currentUser.uid,
+            studentName: currentUser.displayName,
+            studentEmail: currentUser.email,
+            tutorId: tutorId,
+            tutorName: tutor.name,
+            address: address,
+            date: date,
+            time: time,
+            hours: hours,
+            description: description,
+            totalCost: hours * tutor.hourlyRate,
+            status: 'pending',
+            createdAt: Date.now()
+        };
+        
+        await set(bookingRef, bookingData);
+        
+        // Send notification to tutor
+        const tutorNotifRef = push(ref(database, `notifications/${tutorId}`));
+        await set(tutorNotifRef, {
+            type: 'new_booking',
+            bookingId: bookingRef.key,
+            message: `New booking request from ${currentUser.displayName}`,
+            timestamp: Date.now(),
+            read: false
+        });
+        
+        // Send notification to student
+        const studentNotifRef = push(ref(database, `notifications/${currentUser.uid}`));
+        await set(studentNotifRef, {
+            type: 'booking_sent',
+            bookingId: bookingRef.key,
+            message: `Booking request sent to ${tutor.name}. Waiting for confirmation.`,
+            timestamp: Date.now(),
+            read: false
+        });
+        
+        closeModal('bookingModal');
+        alert('Booking request sent successfully! The tutor will respond soon.');
+        navigateToPage('bookings');
+        
+    } catch (error) {
+        console.error('Booking error:', error);
+        alert('Failed to create booking. Please try again.');
+    }
+}
+
+// ==================== BECOME TUTOR ====================
+
+document.getElementById('becomeTutorBtn').addEventListener('click', () => {
+    const specializationOptions = specializations.map(spec => 
+        `<option value="${spec}">${spec}</option>`
+    ).join('');
+    
+    const cityOptions = indianCities.map(city => 
+        `<option value="${city}">${city}</option>`
+    ).join('');
+    
+    const modalHTML = `
+        <div class="modal" id="becomeTutorModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Register as a Tutor</h2>
+                    <button class="modal-close" onclick="closeModal('becomeTutorModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="tutorRegistrationForm">
+                        <div class="form-group">
+                            <label>Full Name *</label>
+                            <input type="text" id="tutorName" value="${currentUser.displayName}" required>
+                        </div>
+                        <div class="form-group" style="position: relative;">
+                            <label>Specialization *</label>
+                            <input type="text" id="tutorSpecialization" placeholder="Select from list or type your own" autocomplete="off" required list="specializationList">
+                            <datalist id="specializationList">
+                                ${specializationOptions}
+                            </datalist>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                                💡 Type any subject if not in list (e.g., "Tabla", "Sanskrit", "Cooking")
+                            </small>
+                        </div>
+                        <div class="form-group" style="position: relative;">
+                            <label>Location (City) *</label>
+                            <input type="text" id="tutorLocation" placeholder="Select from list or type your own" autocomplete="off" required list="cityList">
+                            <datalist id="cityList">
+                                ${cityOptions}
+                            </datalist>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                                💡 Type your city/area if not in list
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label>Mobile Number *</label>
+                            <input type="tel" id="tutorMobile" required placeholder="+91 XXXXXXXXXX" pattern="[+0-9]{10,15}">
+                        </div>
+                        <div class="form-group">
+                            <label>Age *</label>
+                            <input type="number" id="tutorAge" min="18" max="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Experience (years) *</label>
+                            <input type="number" id="tutorExperience" min="0" max="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Hourly Rate (₹) *</label>
+                            <input type="number" id="tutorRate" min="100" max="10000" required placeholder="e.g., 500">
+                        </div>
+                        <div class="form-group">
+                            <label>Certifications</label>
+                            <textarea id="tutorCertifications" placeholder="List your certifications, degrees, and qualifications..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('becomeTutorModal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitTutorRegistration()">Register</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+});
+
+window.submitTutorRegistration = async function() {
+    const name = document.getElementById('tutorName').value.trim();
+    const specialization = document.getElementById('tutorSpecialization').value.trim();
+    const location = document.getElementById('tutorLocation').value.trim();
+    const mobile = document.getElementById('tutorMobile').value.trim();
+    const age = document.getElementById('tutorAge').value;
+    const experience = document.getElementById('tutorExperience').value;
+    const hourlyRate = document.getElementById('tutorRate').value;
+    const certifications = document.getElementById('tutorCertifications').value.trim();
+    
+    if (!name || !specialization || !location || !mobile || !age || !experience || !hourlyRate) {
+        alert('Please fill all required fields');
+        return;
+    }
+    
+    try {
+        // Create tutor profile (accepts any specialization and location user types)
+        const tutorRef = ref(database, `tutors/${currentUser.uid}`);
+        await set(tutorRef, {
+            userId: currentUser.uid,
+            name: name,
+            specialization: specialization,
+            location: location,
+            mobile: mobile,
+            age: parseInt(age),
+            experience: parseInt(experience),
+            hourlyRate: parseInt(hourlyRate),
+            certifications: certifications,
+            email: currentUser.email,
+            photoURL: currentUser.photoURL,
+            createdAt: Date.now()
+        });
+        
+        // Update user status to tutor
+        await update(ref(database, `users/${currentUser.uid}`), {
+            isTutor: true
+        });
+        
+        currentUserData.isTutor = true;
+        
+        // Update UI - hide banner and update role
+        const banner = document.getElementById('becomeTutorBanner');
+        if (banner) {
+            banner.style.display = 'none';
+        }
+        document.getElementById('userRole').textContent = '👨‍🏫 Tutor';
+        
+        closeModal('becomeTutorModal');
+        alert('Congratulations! You are now registered as a tutor on ApnaSkills.');
+        loadTutors();
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        alert('Failed to register. Please try again.');
+    }
+}
+
+// Continued in next part...
+
+// Continued in next part...
 // ==================== PART 2: STUDENT FEATURES ====================
 // NOTE: This should be appended to Part 1
 
