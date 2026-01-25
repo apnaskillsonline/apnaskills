@@ -399,90 +399,105 @@ document.addEventListener('click', (e) => {
 
 document.getElementById('studentSearchForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const location = locationInput.value.toLowerCase().trim();
-    const specialization = specializationInput.value.toLowerCase().trim();
+    try {
+        const locationInputVal = document.getElementById('studentLocationInput').value;
+        const specializationInputVal = document.getElementById('studentSpecializationInput').value;
 
-    if (!location && !specialization) {
-        alert('Please enter location or specialization to search');
-        return;
-    }
+        const location = locationInputVal ? locationInputVal.toLowerCase().trim() : '';
+        const specialization = specializationInputVal ? specializationInputVal.toLowerCase().trim() : '';
 
-    isSearchActive = true;
-
-    // 1. First, strictly filter by SPECIALIZATION if provided
-    let candidates = allInstructors;
-    if (specialization) {
-        candidates = allInstructors.filter(instructor => {
-            return instructor.specialization.toLowerCase().includes(specialization) ||
-                instructor.name.toLowerCase().includes(specialization) ||
-                (Array.isArray(instructor.specializations) && instructor.specializations.some(s => s.toLowerCase().includes(specialization)));
-        });
-    }
-
-    // 2. If NO Location provided, just show the specialization matches sorted by rating
-    if (!location) {
-        candidates.sort((a, b) => parseFloat(b.avgRating) - parseFloat(a.avgRating));
-        filteredInstructors = candidates;
-    } else {
-        // 3. Address/City Detection logic
-        let detectedCity = null;
-        const foundCity = indianCities.find(city => location.includes(city.toLowerCase()));
-        if (foundCity) {
-            detectedCity = foundCity.toLowerCase();
+        if (!location && !specialization) {
+            alert('Please enter location or specialization to search');
+            return;
         }
 
-        // 4. Score and Filter by LOCATION
-        const scoredCandidates = candidates.map(instructor => {
-            let score = 0;
-            const instLandmark = instructor.landmark ? instructor.landmark.toLowerCase() : '';
-            const instLocation = instructor.location.toLowerCase();
+        isSearchActive = true;
 
-            // PRIORITY 1: Landmark Match (Highest Priority)
-            if (instLandmark && instLandmark.includes(location)) {
-                score += 1000;
-            }
+        // 1. First, strictly filter by SPECIALIZATION if provided
+        let candidates = allInstructors;
+        if (specialization) {
+            candidates = allInstructors.filter(instructor => {
+                const spec = instructor.specialization ? instructor.specialization.toLowerCase() : '';
+                const name = instructor.name ? instructor.name.toLowerCase() : '';
+                const specs = Array.isArray(instructor.specializations) ? instructor.specializations : [];
 
-            // PRIORITY 2: City Match (Medium Priority)
-            if (instLocation.includes(location) || (detectedCity && instLocation.includes(detectedCity))) {
-                score += 500;
-            }
-
-            // PRIORITY 3: General loose match
-            if (score === 0 && (instLocation.includes(location) || location.includes(instLocation))) {
-                score += 100;
-            }
-
-            return { instructor, score };
-        });
-
-        // Filter out those with 0 score (no location match)
-        // Sort by Score DESC, then Rating DESC
-        filteredInstructors = scoredCandidates
-            .filter(item => item.score > 0)
-            .sort((a, b) => {
-                if (a.score !== b.score) return b.score - a.score;
-                return parseFloat(b.instructor.avgRating) - parseFloat(a.instructor.avgRating);
-            })
-            .map(item => item.instructor);
-    }
-
-    // Update Section Title
-    const titleEl = document.querySelector('.tutors-section .section-title');
-    if (titleEl) titleEl.textContent = `Search Results (${filteredInstructors.length})`;
-
-    displayInstructors(filteredInstructors);
-
-    // Hide suggestions
-    locationSuggestions.classList.add('hidden');
-    specializationSuggestions.classList.add('hidden');
-
-    // Auto-Scroll to results
-    setTimeout(() => {
-        const tutorsSection = document.querySelector('.tutors-section');
-        if (tutorsSection) {
-            tutorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return spec.includes(specialization) ||
+                    name.includes(specialization) ||
+                    specs.some(s => s.toLowerCase().includes(specialization));
+            });
         }
-    }, 100);
+
+        // 2. If NO Location provided, just show the specialization matches sorted by rating
+        if (!location) {
+            candidates.sort((a, b) => parseFloat(b.avgRating || 0) - parseFloat(a.avgRating || 0));
+            filteredInstructors = candidates;
+        } else {
+            // 3. Address/City Detection logic
+            let detectedCity = null;
+            if (typeof indianCities !== 'undefined') {
+                const foundCity = indianCities.find(city => location.includes(city.toLowerCase()));
+                if (foundCity) {
+                    detectedCity = foundCity.toLowerCase();
+                }
+            }
+
+            // 4. Score and Filter by LOCATION
+            const scoredCandidates = candidates.map(instructor => {
+                let score = 0;
+                const instLandmark = instructor.landmark ? instructor.landmark.toLowerCase() : '';
+                const instLocation = instructor.location ? instructor.location.toLowerCase() : '';
+
+                // PRIORITY 1: Landmark Match (Highest Priority)
+                if (instLandmark && instLandmark.includes(location)) {
+                    score += 1000;
+                }
+
+                // PRIORITY 2: City Match (Medium Priority)
+                if (instLocation.includes(location) || (detectedCity && instLocation.includes(detectedCity))) {
+                    score += 500;
+                }
+
+                // PRIORITY 3: General loose match
+                if (score === 0 && (instLocation.includes(location) || location.includes(instLocation))) {
+                    score += 100;
+                }
+
+                return { instructor, score };
+            });
+
+            // Filter out those with 0 score (no location match)
+            // Sort by Score DESC, then Rating DESC
+            filteredInstructors = scoredCandidates
+                .filter(item => item.score > 0)
+                .sort((a, b) => {
+                    if (a.score !== b.score) return b.score - a.score;
+                    return parseFloat(b.instructor.avgRating || 0) - parseFloat(a.instructor.avgRating || 0);
+                })
+                .map(item => item.instructor);
+        }
+
+        // Update Section Title
+        const titleEl = document.querySelector('.tutors-section .section-title');
+        if (titleEl) titleEl.textContent = `Search Results (${filteredInstructors.length})`;
+
+        displayInstructors(filteredInstructors);
+
+        // Hide suggestions
+        locationSuggestions.classList.add('hidden');
+        specializationSuggestions.classList.add('hidden');
+
+        // Auto-Scroll to results
+        setTimeout(() => {
+            const tutorsSection = document.querySelector('.tutors-section');
+            if (tutorsSection) {
+                tutorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100);
+
+    } catch (error) {
+        console.error('Search failed:', error);
+        alert('An error occurred during search. Please reload and try again.');
+    }
 });
 
 document.getElementById('studentClearSearchBtn').addEventListener('click', () => {
