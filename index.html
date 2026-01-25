@@ -1,16 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ApnaSkills - Find Your Perfect Instructor</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <!-- ==================== LOGIN PAGE ==================== -->
     <div id="loginPage">
         <div class="login-container">
-            <div class="logo">ApnaSkills</div>
+            <div class="logo">
+                <img src="logo.jpeg" class="brand-logo-img" alt="Logo">
+                <span class="brand-apna">Apna</span><span class="brand-skills">Skills</span>
+            </div>
             <p class="login-subtitle">Find the perfect instructor for your learning journey</p>
             <button id="googleLoginBtn" class="btn btn-google">
                 <span>🔐</span> Sign in with Google
@@ -23,7 +28,10 @@
         <!-- Header -->
         <header>
             <nav>
-                <div class="nav-brand">ApnaSkills</div>
+                <div class="nav-brand">
+                    <img src="logo.jpeg" class="brand-logo-img" alt="Logo">
+                    <span class="brand-apna">Apna</span><span class="brand-skills">Skills</span>
+                </div>
                 <div class="nav-menu">
                     <a href="#" class="nav-link active" data-page="home">Home</a>
                     <a href="#" class="nav-link" data-page="bookings">My Bookings</a>
@@ -58,19 +66,24 @@
                     <form class="search-form" id="studentSearchForm">
                         <div class="input-group" style="position: relative;">
                             <label for="studentLocationInput">Location</label>
-                            <input type="text" id="studentLocationInput" placeholder="Select city or type your own" autocomplete="off">
+                            <input type="text" id="studentLocationInput" placeholder="Select city or type your own"
+                                autocomplete="off">
                             <div id="studentLocationSuggestions" class="suggestions-dropdown hidden"></div>
-                            <small style="color: var(--text-secondary); font-size: 11px; margin-top: 4px;">💡 Type any city or area</small>
+                            <small style="color: var(--text-secondary); font-size: 11px; margin-top: 4px;">💡 Type any
+                                city or area</small>
                         </div>
                         <div class="input-group" style="position: relative;">
                             <label for="studentSpecializationInput">Specialization</label>
-                            <input type="text" id="studentSpecializationInput" placeholder="Select subject or type your own" autocomplete="off">
+                            <input type="text" id="studentSpecializationInput"
+                                placeholder="Select subject or type your own" autocomplete="off">
                             <div id="studentSpecializationSuggestions" class="suggestions-dropdown hidden"></div>
-                            <small style="color: var(--text-secondary); font-size: 11px; margin-top: 4px;">💡 Type any subject you need</small>
+                            <small style="color: var(--text-secondary); font-size: 11px; margin-top: 4px;">💡 Type any
+                                subject you need</small>
                         </div>
                         <button type="submit" class="btn btn-primary" style="align-self: flex-end;">Search</button>
                     </form>
-                    <button type="button" class="btn btn-secondary" id="studentClearSearchBtn" style="margin-top: 16px;">Clear Search</button>
+                    <button type="button" class="btn btn-secondary" id="studentClearSearchBtn"
+                        style="margin-top: 16px;">Clear Search</button>
                 </div>
 
                 <!-- Become Instructor Banner -->
@@ -93,12 +106,14 @@
                         <div class="feature-card">
                             <div class="feature-icon">🎯</div>
                             <h3 class="feature-title">Verified Instructors</h3>
-                            <p class="feature-desc">All our instructors are verified professionals with proven expertise and certifications</p>
+                            <p class="feature-desc">All our instructors are verified professionals with proven expertise
+                                and certifications</p>
                         </div>
                         <div class="feature-card">
                             <div class="feature-icon">💰</div>
                             <h3 class="feature-title">Flexible Pricing</h3>
-                            <p class="feature-desc">Choose instructors that fit your budget with transparent hourly rates</p>
+                            <p class="feature-desc">Choose instructors that fit your budget with transparent hourly
+                                rates</p>
                         </div>
                         <div class="feature-card">
                             <div class="feature-icon">📅</div>
@@ -108,12 +123,14 @@
                         <div class="feature-card">
                             <div class="feature-icon">⭐</div>
                             <h3 class="feature-title">Rated & Reviewed</h3>
-                            <p class="feature-desc">Make informed decisions with ratings and reviews from real students</p>
+                            <p class="feature-desc">Make informed decisions with ratings and reviews from real students
+                            </p>
                         </div>
                         <div class="feature-card">
                             <div class="feature-icon">🏠</div>
                             <h3 class="feature-title">Learn From Home</h3>
-                            <p class="feature-desc">Connect with instructors online or schedule in-person sessions in your area</p>
+                            <p class="feature-desc">Connect with instructors online or schedule in-person sessions in
+                                your area</p>
                         </div>
                         <div class="feature-card">
                             <div class="feature-icon">🔒</div>
@@ -162,7 +179,10 @@
         <!-- Header -->
         <header>
             <nav>
-                <div class="nav-brand">ApnaSkills - Instructor</div>
+                <div class="nav-brand">
+                    <img src="logo.jpeg" class="brand-logo-img" alt="Logo">
+                    <span class="brand-apna">Apna</span><span class="brand-skills">Skills</span> - Instructor
+                </div>
                 <div class="nav-menu">
                     <a href="#" class="nav-link active" data-page="instructor-home">Dashboard</a>
                     <a href="#" class="nav-link" data-page="instructor-bookings">My Bookings</a>
@@ -175,7 +195,8 @@
                         <img id="instructorUserAvatar" class="user-avatar" src="" alt="User">
                         <div style="display: flex; flex-direction: column; align-items: flex-start;">
                             <span id="instructorUserName"></span>
-                            <span style="font-size: 11px; color: var(--primary); font-weight: 600;">👨‍🏫 Instructor</span>
+                            <span style="font-size: 11px; color: var(--primary); font-weight: 600;">👨‍🏫
+                                Instructor</span>
                         </div>
                     </div>
                     <button id="instructorLogoutBtn" class="btn btn-secondary">Logout</button>
@@ -232,5 +253,5 @@
     <!-- Load JavaScript -->
     <script type="module" src="app.js"></script>
 </body>
-</html>
 
+</html>
