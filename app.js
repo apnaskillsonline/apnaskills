@@ -1,5 +1,38 @@
 // ==================== FIREBASE INITIALIZATION ====================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+
+// Firefly Animation
+function createFireflies() {
+    const fireflyCount = 20;
+    for (let i = 0; i < fireflyCount; i++) {
+        const firefly = document.createElement('div');
+        firefly.className = 'firefly';
+
+        // Random starting position
+        const top = Math.random() * window.innerHeight;
+        const left = Math.random() * window.innerWidth;
+
+        // Random size
+        const size = Math.random() * 10 + 5;
+
+        // Random animation duration/delay
+        const duration = Math.random() * 10 + 10;
+        const delay = Math.random() * 5;
+
+        firefly.style.top = `${top}px`;
+        firefly.style.left = `${left}px`;
+        firefly.style.width = `${size}px`;
+        firefly.style.height = `${size}px`;
+        firefly.style.animationDuration = `${duration}s`;
+        firefly.style.animationDelay = `${delay}s`;
+
+        document.body.appendChild(firefly);
+    }
+}
+
+// Call on load
+window.addEventListener('load', createFireflies);
+
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 import { getDatabase, ref, set, get, push, update, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
@@ -1563,5 +1596,4 @@ document.addEventListener('click', (e) => {
         e.target.remove();
     }
 });
-
 
