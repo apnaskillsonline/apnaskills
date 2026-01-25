@@ -409,47 +409,79 @@ document.getElementById('studentSearchForm').addEventListener('submit', (e) => {
 
     isSearchActive = true;
 
-    // Smart City Detection in Address
-    let targetLocation = location;
-    if (location) {
-        // Check if any known city is present in the input string
-        const foundCity = indianCities.find(city => location.includes(city.toLowerCase()));
-        if (foundCity) {
-            targetLocation = foundCity.toLowerCase();
-        }
+    // 1. First, strictly filter by SPECIALIZATION if provided
+    let candidates = allInstructors;
+    if (specialization) {
+        candidates = allInstructors.filter(instructor => {
+            return instructor.specialization.toLowerCase().includes(specialization) ||
+                instructor.name.toLowerCase().includes(specialization) ||
+                (Array.isArray(instructor.specializations) && instructor.specializations.some(s => s.toLowerCase().includes(specialization)));
+        });
     }
 
-    filteredInstructors = allInstructors.filter(instructor => {
-        let locationMatch = true;
-        if (location) {
-            // 1. Check strict City match (from smart detection)
-            const cityMatch = instructor.location.toLowerCase().includes(targetLocation);
-
-            // 2. Check strict Landmark match
-            const landmarkMatch = instructor.landmark && instructor.landmark.toLowerCase().includes(location);
-
-            // 3. Fallback: Check if instructor location is inside user input (e.g. user typed "Model Town, Delhi" -> matches instructor "Delhi")
-            // OR if user input is inside instructor location
-            const flexibleMatch = instructor.location.toLowerCase().includes(location);
-
-            locationMatch = cityMatch || landmarkMatch || flexibleMatch;
+    // 2. If NO Location provided, just show the specialization matches sorted by rating
+    if (!location) {
+        candidates.sort((a, b) => parseFloat(b.avgRating) - parseFloat(a.avgRating));
+        filteredInstructors = candidates;
+    } else {
+        // 3. Address/City Detection logic
+        let detectedCity = null;
+        const foundCity = indianCities.find(city => location.includes(city.toLowerCase()));
+        if (foundCity) {
+            detectedCity = foundCity.toLowerCase();
         }
 
-        const specializationMatch = !specialization ||
-            instructor.specialization.toLowerCase().includes(specialization) ||
-            instructor.name.toLowerCase().includes(specialization) ||
-            (Array.isArray(instructor.specializations) && instructor.specializations.some(s => s.toLowerCase().includes(specialization)));
+        // 4. Score and Filter by LOCATION
+        const scoredCandidates = candidates.map(instructor => {
+            let score = 0;
+            const instLandmark = instructor.landmark ? instructor.landmark.toLowerCase() : '';
+            const instLocation = instructor.location.toLowerCase();
 
-        return locationMatch && specializationMatch;
-    });
+            // PRIORITY 1: Landmark Match (Highest Priority)
+            if (instLandmark && instLandmark.includes(location)) {
+                score += 1000;
+            }
+
+            // PRIORITY 2: City Match (Medium Priority)
+            if (instLocation.includes(location) || (detectedCity && instLocation.includes(detectedCity))) {
+                score += 500;
+            }
+
+            // PRIORITY 3: General loose match
+            if (score === 0 && (instLocation.includes(location) || location.includes(instLocation))) {
+                score += 100;
+            }
+
+            return { instructor, score };
+        });
+
+        // Filter out those with 0 score (no location match)
+        // Sort by Score DESC, then Rating DESC
+        filteredInstructors = scoredCandidates
+            .filter(item => item.score > 0)
+            .sort((a, b) => {
+                if (a.score !== b.score) return b.score - a.score;
+                return parseFloat(b.instructor.avgRating) - parseFloat(a.instructor.avgRating);
+            })
+            .map(item => item.instructor);
+    }
+
+    // Update Section Title
+    const titleEl = document.querySelector('.tutors-section .section-title');
+    if (titleEl) titleEl.textContent = `Search Results (${filteredInstructors.length})`;
 
     displayInstructors(filteredInstructors);
+
+    // Hide suggestions
     locationSuggestions.classList.add('hidden');
     specializationSuggestions.classList.add('hidden');
 
+    // Auto-Scroll to results
     setTimeout(() => {
         const tutorsSection = document.querySelector('.tutors-section');
-        if (tutorsSection) tutorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (tutorsSection) {
+            tutorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }, 100);
 });
 
