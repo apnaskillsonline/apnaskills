@@ -600,7 +600,7 @@ window.showBookingModal = async function (instructorId) {
                         ` : ''}
                         <div class="form-group">
                             <label>Session Requirements*</label>
-                            <input type="text" id="subjectClass" required placeholder="e.g., Mathematics Class 10th, All Subjects Class 1-5">
+                            <input type="text" id="subjectClass" required placeholder="e.g., Class, Subjects, Yoga, Music, Dance, Art and Craft, Programming">
                             <small style="color: var(--text-secondary); display: block; margin-top: 4px;">Specify the subject and class level you need help with</small>
                         </div>
                         <div class="form-group">
@@ -1563,4 +1563,5 @@ document.addEventListener('click', (e) => {
         e.target.remove();
     }
 });
+
 
