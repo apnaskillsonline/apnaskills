@@ -225,8 +225,19 @@ async function loadInstructors() {
             allInstructors.push(instructor);
         });
 
+        // Sort by Rating (Desc), then Total Ratings (Desc)
+        allInstructors.sort((a, b) => {
+            if (parseFloat(b.avgRating) !== parseFloat(a.avgRating)) {
+                return parseFloat(b.avgRating) - parseFloat(a.avgRating);
+            }
+            return b.totalRatings - a.totalRatings;
+        });
+
         allLandmarks = Array.from(landmarkSet);
-        displayInstructors(allInstructors);
+
+        // Initially show only Top Rated (e.g., Top 8)
+        const featuredInstructors = allInstructors.slice(0, 8);
+        displayInstructors(featuredInstructors);
     } else {
         document.getElementById('studentInstructorsGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎓</div><p>No instructors available yet. Be the first to register!</p></div>';
     }
@@ -235,14 +246,23 @@ async function loadInstructors() {
 function displayInstructors(instructors) {
     const grid = document.getElementById('studentInstructorsGrid');
 
+    // Sort passed instructors just in case (e.g. search results)
+    instructors.sort((a, b) => {
+        if (parseFloat(b.avgRating) !== parseFloat(a.avgRating)) {
+            return parseFloat(b.avgRating) - parseFloat(a.avgRating);
+        }
+        return b.totalRatings - a.totalRatings;
+    });
+
     if (instructors.length === 0) {
         if (isSearchActive) {
             grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>No instructors found matching your search criteria. Try different keywords or <button class="btn btn-primary" onclick="document.getElementById(\'studentClearSearchBtn\').click()">clear search</button></p></div>';
         } else {
-            grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎓</div><p>No instructors available yet. Be the first to register!</p></div>';
+            grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎓</div><p>No featured instructors available right now.</p></div>';
         }
         return;
     }
+    // ... rest of function remains same (map/join is below this block in file)
 
     grid.innerHTML = instructors.map(instructor => {
         // Display multiple specializations
@@ -289,7 +309,16 @@ const locationSuggestions = document.getElementById('studentLocationSuggestions'
 const specializationInput = document.getElementById('studentSpecializationInput');
 const specializationSuggestions = document.getElementById('studentSpecializationSuggestions');
 
-locationInput.addEventListener('input', (e) => {
+// Debounce Utility
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+locationInput.addEventListener('input', debounce((e) => {
     const value = e.target.value.toLowerCase().trim();
     if (value.length === 0) {
         locationSuggestions.classList.add('hidden');
@@ -302,39 +331,36 @@ locationInput.addEventListener('input', (e) => {
     let suggestionsHTML = '';
 
     if (cityMatches.length > 0) {
-        suggestionsHTML += `<div style="padding: 8px 16px; font-size: 12px; font-weight: 700; color: var(--text-light); background: var(--bg-tertiary);">CITIES</div>`;
+        suggestionsHTML += `<div style="padding: 8px 16px; font-size: 11px; font-weight: 700; color: var(--text-light); background: var(--bg-tertiary); letter-spacing: 0.5px;">CITIES</div>`;
         suggestionsHTML += cityMatches.slice(0, 5).map(city =>
             `<div class="suggestion-item" data-value="${city}">🏙️ ${city}</div>`
         ).join('');
     }
 
     if (landmarkMatches.length > 0) {
-        suggestionsHTML += `<div style="padding: 8px 16px; font-size: 12px; font-weight: 700; color: var(--text-light); background: var(--bg-tertiary);">LANDMARKS</div>`;
+        suggestionsHTML += `<div style="padding: 8px 16px; font-size: 11px; font-weight: 700; color: var(--text-light); background: var(--bg-tertiary); letter-spacing: 0.5px;">LANDMARKS</div>`;
         suggestionsHTML += landmarkMatches.slice(0, 5).map(lm =>
             `<div class="suggestion-item" data-value="${lm}">📍 ${lm}</div>`
         ).join('');
     }
 
-    if (suggestionsHTML === '') {
-        locationSuggestions.innerHTML = `<div class="suggestion-item custom-option" data-value="${e.target.value}">✏️ Use "${e.target.value}"</div>`;
-    } else {
-        locationSuggestions.innerHTML = suggestionsHTML + `<div class="suggestion-item custom-option" data-value="${e.target.value}">✏️ Use "${e.target.value}"</div>`;
-    }
+    // Always offer the custom search term
+    suggestionsHTML += `<div class="suggestion-item custom-option" data-value="${e.target.value}">🔍 Search for "${e.target.value}"</div>`;
 
+    locationSuggestions.innerHTML = suggestionsHTML;
     locationSuggestions.classList.remove('hidden');
 
     document.querySelectorAll('#studentLocationSuggestions .suggestion-item').forEach(item => {
         item.addEventListener('click', () => {
             // Remove icon if present for the value
             let cleanValue = item.dataset.value;
-            // logic to clean just in case, though data-value is clean
             locationInput.value = cleanValue;
             locationSuggestions.classList.add('hidden');
         });
     });
-});
+}, 300));
 
-specializationInput.addEventListener('input', (e) => {
+specializationInput.addEventListener('input', debounce((e) => {
     const value = e.target.value.toLowerCase().trim();
     if (value.length === 0) {
         specializationSuggestions.classList.add('hidden');
@@ -343,15 +369,18 @@ specializationInput.addEventListener('input', (e) => {
 
     const matches = specializations.filter(spec => spec.toLowerCase().includes(value));
 
-    if (matches.length === 0) {
-        specializationSuggestions.innerHTML = `<div class="suggestion-item custom-option" data-value="${e.target.value}">✏️ Use "${e.target.value}"</div>`;
-        specializationSuggestions.classList.remove('hidden');
-    } else {
-        specializationSuggestions.innerHTML = matches.slice(0, 10).map(spec =>
+    let suggestionsHTML = '';
+
+    if (matches.length > 0) {
+        suggestionsHTML = matches.slice(0, 10).map(spec =>
             `<div class="suggestion-item" data-value="${spec}">${spec}</div>`
-        ).join('') + `<div class="suggestion-item custom-option" data-value="${e.target.value}">✏️ Use "${e.target.value}"</div>`;
-        specializationSuggestions.classList.remove('hidden');
+        ).join('');
     }
+
+    suggestionsHTML += `<div class="suggestion-item custom-option" data-value="${e.target.value}">🔍 Search for "${e.target.value}"</div>`;
+
+    specializationSuggestions.innerHTML = suggestionsHTML;
+    specializationSuggestions.classList.remove('hidden');
 
     document.querySelectorAll('#studentSpecializationSuggestions .suggestion-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -359,7 +388,7 @@ specializationInput.addEventListener('input', (e) => {
             specializationSuggestions.classList.add('hidden');
         });
     });
-});
+}, 300));
 
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.input-group')) {
@@ -380,14 +409,36 @@ document.getElementById('studentSearchForm').addEventListener('submit', (e) => {
 
     isSearchActive = true;
 
+    // Smart City Detection in Address
+    let targetLocation = location;
+    if (location) {
+        // Check if any known city is present in the input string
+        const foundCity = indianCities.find(city => location.includes(city.toLowerCase()));
+        if (foundCity) {
+            targetLocation = foundCity.toLowerCase();
+        }
+    }
+
     filteredInstructors = allInstructors.filter(instructor => {
-        const locationMatch = !location ||
-            instructor.location.toLowerCase().includes(location) ||
-            (instructor.landmark && instructor.landmark.toLowerCase().includes(location));
+        let locationMatch = true;
+        if (location) {
+            // 1. Check strict City match (from smart detection)
+            const cityMatch = instructor.location.toLowerCase().includes(targetLocation);
+
+            // 2. Check strict Landmark match
+            const landmarkMatch = instructor.landmark && instructor.landmark.toLowerCase().includes(location);
+
+            // 3. Fallback: Check if instructor location is inside user input (e.g. user typed "Model Town, Delhi" -> matches instructor "Delhi")
+            // OR if user input is inside instructor location
+            const flexibleMatch = instructor.location.toLowerCase().includes(location);
+
+            locationMatch = cityMatch || landmarkMatch || flexibleMatch;
+        }
 
         const specializationMatch = !specialization ||
             instructor.specialization.toLowerCase().includes(specialization) ||
-            instructor.name.toLowerCase().includes(specialization);
+            instructor.name.toLowerCase().includes(specialization) ||
+            (Array.isArray(instructor.specializations) && instructor.specializations.some(s => s.toLowerCase().includes(specialization)));
 
         return locationMatch && specializationMatch;
     });
@@ -406,7 +457,10 @@ document.getElementById('studentClearSearchBtn').addEventListener('click', () =>
     locationInput.value = '';
     specializationInput.value = '';
     isSearchActive = false;
-    displayInstructors(allInstructors);
+    // Reset to "Featured" (Top Rated) view
+    const featuredInstructors = allInstructors.slice(0, 8);
+    displayInstructors(featuredInstructors);
+
     locationSuggestions.classList.add('hidden');
     specializationSuggestions.classList.add('hidden');
 });
