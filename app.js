@@ -36,10 +36,10 @@ document.getElementById('googleLoginBtn').addEventListener('click', async () => 
     try {
         const result = await signInWithPopup(auth, provider);
         currentUser = result.user;
-        
+
         const userRef = ref(database, `users/${currentUser.uid}`);
         const snapshot = await get(userRef);
-        
+
         if (!snapshot.exists()) {
             await set(userRef, {
                 uid: currentUser.uid,
@@ -49,7 +49,7 @@ document.getElementById('googleLoginBtn').addEventListener('click', async () => 
                 isInstructor: false,
                 createdAt: Date.now()
             });
-            
+
             const notifRef = push(ref(database, `notifications/${currentUser.uid}`));
             await set(notifRef, {
                 type: 'welcome',
@@ -70,9 +70,9 @@ onAuthStateChanged(auth, async (user) => {
         const userRef = ref(database, `users/${user.uid}`);
         const snapshot = await get(userRef);
         currentUserData = snapshot.val();
-        
+
         document.getElementById('loginPage').classList.add('hidden');
-        
+
         if (currentUserData.isInstructor) {
             // Show instructor interface
             document.getElementById('instructorApp').classList.remove('hidden');
@@ -91,7 +91,7 @@ onAuthStateChanged(auth, async (user) => {
             await loadStudentNotifications();
             setupStudentNotificationListener();
         }
-        
+
         setTimeout(() => checkPendingRatings(), 2000);
     } else {
         document.getElementById('loginPage').classList.remove('hidden');
@@ -111,7 +111,7 @@ document.querySelectorAll('#studentApp .nav-link').forEach(link => {
         document.querySelectorAll('#studentApp .nav-link').forEach(l => l.classList.remove('active'));
         link.classList.add('active');
         document.querySelectorAll('#studentApp .page-content').forEach(p => p.classList.add('hidden'));
-        
+
         if (page === 'home') {
             document.getElementById('studentHomePage').classList.remove('hidden');
         } else if (page === 'bookings') {
@@ -132,7 +132,7 @@ document.querySelectorAll('#instructorApp .nav-link').forEach(link => {
         document.querySelectorAll('#instructorApp .nav-link').forEach(l => l.classList.remove('active'));
         link.classList.add('active');
         document.querySelectorAll('#instructorApp .page-content').forEach(p => p.classList.add('hidden'));
-        
+
         if (page === 'instructor-home') {
             document.getElementById('instructorHomePage').classList.remove('hidden');
             loadInstructorDashboard();
@@ -157,9 +157,9 @@ console.log('ApnaSkills Platform Loaded Successfully!');
 async function loadCategories() {
     const instructorsRef = ref(database, 'instructors');
     const snapshot = await get(instructorsRef);
-    
+
     const categoryCounts = {};
-    
+
     if (snapshot.exists()) {
         snapshot.forEach(childSnapshot => {
             const instructor = childSnapshot.val();
@@ -167,15 +167,15 @@ async function loadCategories() {
             categoryCounts[spec] = (categoryCounts[spec] || 0) + 1;
         });
     }
-    
+
     const grid = document.getElementById('categoriesGrid');
     const categories = Object.keys(categoryCounts).slice(0, 12);
-    
+
     if (categories.length === 0) {
         grid.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Categories will appear here once instructors register</p>';
         return;
     }
-    
+
     grid.innerHTML = categories.map(cat => `
         <div class="category-card" onclick="filterByCategory('${cat}')">
             <div class="category-icon">📚</div>
@@ -185,25 +185,29 @@ async function loadCategories() {
     `).join('');
 }
 
-window.filterByCategory = function(category) {
+window.filterByCategory = function (category) {
     document.getElementById('studentSpecializationInput').value = category;
     document.getElementById('studentSearchForm').dispatchEvent(new Event('submit'));
 }
 
 // ==================== LOAD INSTRUCTORS ====================
+let allLandmarks = []; // Store unique landmarks
+
 async function loadInstructors() {
     const instructorsRef = ref(database, 'instructors');
     const snapshot = await get(instructorsRef);
-    
+
     if (snapshot.exists()) {
         allInstructors = [];
+        const landmarkSet = new Set();
+
         snapshot.forEach(childSnapshot => {
             const instructor = childSnapshot.val();
             instructor.id = childSnapshot.key;
-            
+
             // Don't show current user if they're an instructor
             if (instructor.userId === currentUser.uid) return;
-            
+
             if (instructor.ratings) {
                 const ratings = Object.values(instructor.ratings);
                 const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
@@ -213,10 +217,15 @@ async function loadInstructors() {
                 instructor.avgRating = 0;
                 instructor.totalRatings = 0;
             }
-            
+
+            if (instructor.landmark) {
+                landmarkSet.add(instructor.landmark);
+            }
+
             allInstructors.push(instructor);
         });
-        
+
+        allLandmarks = Array.from(landmarkSet);
         displayInstructors(allInstructors);
     } else {
         document.getElementById('studentInstructorsGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎓</div><p>No instructors available yet. Be the first to register!</p></div>';
@@ -225,7 +234,7 @@ async function loadInstructors() {
 
 function displayInstructors(instructors) {
     const grid = document.getElementById('studentInstructorsGrid');
-    
+
     if (instructors.length === 0) {
         if (isSearchActive) {
             grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>No instructors found matching your search criteria. Try different keywords or <button class="btn btn-primary" onclick="document.getElementById(\'studentClearSearchBtn\').click()">clear search</button></p></div>';
@@ -234,13 +243,13 @@ function displayInstructors(instructors) {
         }
         return;
     }
-    
+
     grid.innerHTML = instructors.map(instructor => {
         // Display multiple specializations
-        const specializationsDisplay = Array.isArray(instructor.specializations) 
-            ? instructor.specializations.join(', ') 
+        const specializationsDisplay = Array.isArray(instructor.specializations)
+            ? instructor.specializations.join(', ')
             : instructor.specialization;
-        
+
         return `
         <div class="tutor-card" onclick="viewInstructorDetails('${instructor.id}')">
             <div class="tutor-header">
@@ -260,6 +269,12 @@ function displayInstructors(instructors) {
                     <span class="tutor-detail-label">Location</span>
                     <span class="tutor-detail-value">${instructor.location}</span>
                 </div>
+                ${instructor.landmark ? `
+                <div class="tutor-detail-item">
+                    <span class="tutor-detail-label">Near</span>
+                    <span class="tutor-detail-value" style="color: var(--primary);">📍 ${instructor.landmark}</span>
+                </div>
+                ` : ''}
             </div>
             <div class="tutor-price">₹${instructor.hourlyRate}/hour</div>
             <button class="btn btn-primary" style="width: 100%;" onclick="event.stopPropagation(); showBookingModal('${instructor.id}')">Book Now</button>
@@ -280,22 +295,40 @@ locationInput.addEventListener('input', (e) => {
         locationSuggestions.classList.add('hidden');
         return;
     }
-    
-    const matches = indianCities.filter(city => city.toLowerCase().includes(value));
-    
-    if (matches.length === 0) {
-        locationSuggestions.innerHTML = `<div class="suggestion-item custom-option" data-value="${e.target.value}">✏️ Use "${e.target.value}"</div>`;
-        locationSuggestions.classList.remove('hidden');
-    } else {
-        locationSuggestions.innerHTML = matches.slice(0, 10).map(city => 
-            `<div class="suggestion-item" data-value="${city}">${city}</div>`
-        ).join('') + `<div class="suggestion-item custom-option" data-value="${e.target.value}">✏️ Use "${e.target.value}"</div>`;
-        locationSuggestions.classList.remove('hidden');
+
+    const cityMatches = indianCities.filter(city => city.toLowerCase().includes(value));
+    const landmarkMatches = allLandmarks.filter(lm => lm.toLowerCase().includes(value));
+
+    let suggestionsHTML = '';
+
+    if (cityMatches.length > 0) {
+        suggestionsHTML += `<div style="padding: 8px 16px; font-size: 12px; font-weight: 700; color: var(--text-light); background: var(--bg-tertiary);">CITIES</div>`;
+        suggestionsHTML += cityMatches.slice(0, 5).map(city =>
+            `<div class="suggestion-item" data-value="${city}">🏙️ ${city}</div>`
+        ).join('');
     }
-    
+
+    if (landmarkMatches.length > 0) {
+        suggestionsHTML += `<div style="padding: 8px 16px; font-size: 12px; font-weight: 700; color: var(--text-light); background: var(--bg-tertiary);">LANDMARKS</div>`;
+        suggestionsHTML += landmarkMatches.slice(0, 5).map(lm =>
+            `<div class="suggestion-item" data-value="${lm}">📍 ${lm}</div>`
+        ).join('');
+    }
+
+    if (suggestionsHTML === '') {
+        locationSuggestions.innerHTML = `<div class="suggestion-item custom-option" data-value="${e.target.value}">✏️ Use "${e.target.value}"</div>`;
+    } else {
+        locationSuggestions.innerHTML = suggestionsHTML + `<div class="suggestion-item custom-option" data-value="${e.target.value}">✏️ Use "${e.target.value}"</div>`;
+    }
+
+    locationSuggestions.classList.remove('hidden');
+
     document.querySelectorAll('#studentLocationSuggestions .suggestion-item').forEach(item => {
         item.addEventListener('click', () => {
-            locationInput.value = item.dataset.value;
+            // Remove icon if present for the value
+            let cleanValue = item.dataset.value;
+            // logic to clean just in case, though data-value is clean
+            locationInput.value = cleanValue;
             locationSuggestions.classList.add('hidden');
         });
     });
@@ -307,19 +340,19 @@ specializationInput.addEventListener('input', (e) => {
         specializationSuggestions.classList.add('hidden');
         return;
     }
-    
+
     const matches = specializations.filter(spec => spec.toLowerCase().includes(value));
-    
+
     if (matches.length === 0) {
         specializationSuggestions.innerHTML = `<div class="suggestion-item custom-option" data-value="${e.target.value}">✏️ Use "${e.target.value}"</div>`;
         specializationSuggestions.classList.remove('hidden');
     } else {
-        specializationSuggestions.innerHTML = matches.slice(0, 10).map(spec => 
+        specializationSuggestions.innerHTML = matches.slice(0, 10).map(spec =>
             `<div class="suggestion-item" data-value="${spec}">${spec}</div>`
         ).join('') + `<div class="suggestion-item custom-option" data-value="${e.target.value}">✏️ Use "${e.target.value}"</div>`;
         specializationSuggestions.classList.remove('hidden');
     }
-    
+
     document.querySelectorAll('#studentSpecializationSuggestions .suggestion-item').forEach(item => {
         item.addEventListener('click', () => {
             specializationInput.value = item.dataset.value;
@@ -339,26 +372,30 @@ document.getElementById('studentSearchForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const location = locationInput.value.toLowerCase().trim();
     const specialization = specializationInput.value.toLowerCase().trim();
-    
+
     if (!location && !specialization) {
         alert('Please enter location or specialization to search');
         return;
     }
-    
+
     isSearchActive = true;
-    
+
     filteredInstructors = allInstructors.filter(instructor => {
-        const locationMatch = !location || instructor.location.toLowerCase().includes(location);
-        const specializationMatch = !specialization || 
+        const locationMatch = !location ||
+            instructor.location.toLowerCase().includes(location) ||
+            (instructor.landmark && instructor.landmark.toLowerCase().includes(location));
+
+        const specializationMatch = !specialization ||
             instructor.specialization.toLowerCase().includes(specialization) ||
             instructor.name.toLowerCase().includes(specialization);
+
         return locationMatch && specializationMatch;
     });
-    
+
     displayInstructors(filteredInstructors);
     locationSuggestions.classList.add('hidden');
     specializationSuggestions.classList.add('hidden');
-    
+
     setTimeout(() => {
         const tutorsSection = document.querySelector('.tutors-section');
         if (tutorsSection) tutorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -375,15 +412,15 @@ document.getElementById('studentClearSearchBtn').addEventListener('click', () =>
 });
 
 // ==================== INSTRUCTOR DETAILS ====================
-window.viewInstructorDetails = async function(instructorId) {
+window.viewInstructorDetails = async function (instructorId) {
     const instructor = allInstructors.find(t => t.id === instructorId);
     if (!instructor) return;
-    
+
     // Display specializations
-    const specializationsDisplay = Array.isArray(instructor.specializations) 
-        ? instructor.specializations.join(', ') 
+    const specializationsDisplay = Array.isArray(instructor.specializations)
+        ? instructor.specializations.join(', ')
         : instructor.specialization;
-    
+
     const modalHTML = `
         <div class="modal" id="instructorDetailsModal">
             <div class="modal-content">
@@ -406,6 +443,7 @@ window.viewInstructorDetails = async function(instructorId) {
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div><strong>Experience:</strong> ${instructor.experience} years</div>
                             <div><strong>Location:</strong> ${instructor.location}</div>
+                            ${instructor.landmark ? `<div style="grid-column: 1 / -1; color: var(--primary);"><strong>📍 Landmark:</strong> ${instructor.landmark}</div>` : ''}
                             <div style="grid-column: 1 / -1;"><strong>Email:</strong> ${instructor.email}</div>
                         </div>
                     </div>
@@ -423,7 +461,7 @@ window.viewInstructorDetails = async function(instructorId) {
             </div>
         </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
@@ -432,17 +470,17 @@ window.viewInstructorDetails = async function(instructorId) {
 // NOTE: This should be appended after Part 2
 
 // ==================== BOOKING MODAL ====================
-window.showBookingModal = async function(instructorId) {
+window.showBookingModal = async function (instructorId) {
     const instructor = allInstructors.find(t => t.id === instructorId);
     if (!instructor) return;
-    
+
     // Check if student has mobile number
     const userRef = ref(database, `users/${currentUser.uid}`);
     const userSnapshot = await get(userRef);
     const userData = userSnapshot.val();
-    
+
     const today = new Date().toISOString().split('T')[0];
-    
+
     const modalHTML = `
         <div class="modal" id="bookingModal">
             <div class="modal-content">
@@ -499,18 +537,18 @@ window.showBookingModal = async function(instructorId) {
             </div>
         </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
+
     document.getElementById('bookingHours').addEventListener('input', (e) => {
         const hours = parseInt(e.target.value) || 1;
         document.getElementById('estimatedCost').textContent = hours * instructor.hourlyRate;
     });
 }
 
-window.submitBooking = async function(instructorId, needsMobile) {
+window.submitBooking = async function (instructorId, needsMobile) {
     const instructor = allInstructors.find(t => t.id === instructorId);
-    
+
     let studentMobile = null;
     if (needsMobile) {
         studentMobile = document.getElementById('studentMobile').value.trim();
@@ -523,19 +561,19 @@ window.submitBooking = async function(instructorId, needsMobile) {
         const userSnapshot = await get(userRef);
         studentMobile = userSnapshot.val().mobile;
     }
-    
+
     const subjectClass = document.getElementById('subjectClass').value.trim();
     const address = document.getElementById('bookingAddress').value.trim();
     const date = document.getElementById('bookingDate').value;
     const time = document.getElementById('bookingTime').value;
     const hours = parseInt(document.getElementById('bookingHours').value);
     const description = document.getElementById('bookingDescription').value.trim();
-    
+
     if (!subjectClass || !address || !date || !time || !hours) {
         alert('Please fill all required fields');
         return;
     }
-    
+
     try {
         // Save mobile if new
         if (needsMobile) {
@@ -543,7 +581,7 @@ window.submitBooking = async function(instructorId, needsMobile) {
                 mobile: studentMobile
             });
         }
-        
+
         const bookingRef = push(ref(database, 'bookings'));
         await set(bookingRef, {
             studentId: currentUser.uid,
@@ -562,12 +600,12 @@ window.submitBooking = async function(instructorId, needsMobile) {
             status: 'pending',
             createdAt: Date.now()
         });
-        
+
         // Get instructor specializations
-        const specializationsDisplay = Array.isArray(instructor.specializations) 
-            ? instructor.specializations.join(', ') 
+        const specializationsDisplay = Array.isArray(instructor.specializations)
+            ? instructor.specializations.join(', ')
             : instructor.specialization;
-        
+
         const instructorNotifRef = push(ref(database, `notifications/${instructorId}`));
         await set(instructorNotifRef, {
             type: 'new_booking',
@@ -580,7 +618,7 @@ ${description ? 'Details: ' + description : ''}`,
             timestamp: Date.now(),
             read: false
         });
-        
+
         const studentNotifRef = push(ref(database, `notifications/${currentUser.uid}`));
         await set(studentNotifRef, {
             type: 'booking_sent',
@@ -589,7 +627,7 @@ ${description ? 'Details: ' + description : ''}`,
             timestamp: Date.now(),
             read: false
         });
-        
+
         closeModal('bookingModal');
         alert('Booking request sent successfully! The instructor will respond soon.');
         document.querySelector('[data-page="bookings"]').click();
@@ -601,14 +639,14 @@ ${description ? 'Details: ' + description : ''}`,
 
 // ==================== BECOME INSTRUCTOR ====================
 document.getElementById('becomeInstructorBtn').addEventListener('click', () => {
-    const specializationOptions = specializations.map(spec => 
+    const specializationOptions = specializations.map(spec =>
         `<option value="${spec}">${spec}</option>`
     ).join('');
-    
-    const cityOptions = indianCities.map(city => 
+
+    const cityOptions = indianCities.map(city =>
         `<option value="${city}">${city}</option>`
     ).join('');
-    
+
     const modalHTML = `
         <div class="modal" id="becomeInstructorModal">
             <div class="modal-content">
@@ -640,7 +678,11 @@ document.getElementById('becomeInstructorBtn').addEventListener('click', () => {
                             <label>Location (City) *</label>
                             <input type="text" id="instructorLocation" placeholder="Select from list or type your own" autocomplete="off" required list="cityList">
                             <datalist id="cityList">${cityOptions}</datalist>
-                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">💡 Type your city/area if not in list</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Nearest Landmark *</label>
+                            <input type="text" id="instructorLandmark" placeholder="e.g., Near Central Mall, Opposite Railway Station" required>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">Helps students find you easily</small>
                         </div>
                         <div class="form-group">
                             <label>Mobile Number *</label>
@@ -671,19 +713,19 @@ document.getElementById('becomeInstructorBtn').addEventListener('click', () => {
             </div>
         </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 });
 
-window.addCustomSpec = function() {
+window.addCustomSpec = function () {
     const customInput = document.getElementById('customSpecialization');
     const customValue = customInput.value.trim();
-    
+
     if (!customValue) {
         alert('Please enter a specialization');
         return;
     }
-    
+
     const container = document.getElementById('specializationsContainer');
     const newCheckbox = document.createElement('label');
     newCheckbox.style.display = 'block';
@@ -696,34 +738,35 @@ window.addCustomSpec = function() {
         <input type="checkbox" class="spec-checkbox" value="${customValue}" style="margin-right: 8px;" checked>
         ${customValue} (Custom)
     `;
-    
+
     container.appendChild(newCheckbox);
     customInput.value = '';
 }
 
-window.submitInstructorRegistration = async function() {
+window.submitInstructorRegistration = async function () {
     const name = document.getElementById('instructorName').value.trim();
     const location = document.getElementById('instructorLocation').value.trim();
+    const landmark = document.getElementById('instructorLandmark').value.trim();
     const mobile = document.getElementById('instructorMobile').value.trim();
     const age = document.getElementById('instructorAge').value;
     const experience = document.getElementById('instructorExperience').value;
     const hourlyRate = document.getElementById('instructorRate').value;
     const certifications = document.getElementById('instructorCertifications').value.trim();
-    
+
     // Get selected specializations
     const selectedSpecs = Array.from(document.querySelectorAll('.spec-checkbox:checked'))
         .map(cb => cb.value);
-    
+
     if (selectedSpecs.length === 0) {
         alert('Please select at least one specialization');
         return;
     }
-    
-    if (!name || !location || !mobile || !age || !experience || !hourlyRate) {
+
+    if (!name || !location || !landmark || !mobile || !age || !experience || !hourlyRate) {
         alert('Please fill all required fields');
         return;
     }
-    
+
     try {
         const instructorRef = ref(database, `instructors/${currentUser.uid}`);
         await set(instructorRef, {
@@ -732,6 +775,7 @@ window.submitInstructorRegistration = async function() {
             specializations: selectedSpecs,
             specialization: selectedSpecs.join(', '), // For backward compatibility
             location: location,
+            landmark: landmark,
             mobile: mobile,
             age: parseInt(age),
             experience: parseInt(experience),
@@ -741,11 +785,11 @@ window.submitInstructorRegistration = async function() {
             photoURL: currentUser.photoURL,
             createdAt: Date.now()
         });
-        
+
         await update(ref(database, `users/${currentUser.uid}`), {
             isInstructor: true
         });
-        
+
         closeModal('becomeInstructorModal');
         alert('Congratulations! You are now registered as an instructor. Please logout and login again to access your instructor dashboard.');
         signOut(auth);
@@ -760,22 +804,22 @@ async function loadInstructorDashboard() {
     const instructorRef = ref(database, `instructors/${currentUser.uid}`);
     const snapshot = await get(instructorRef);
     const instructorData = snapshot.val();
-    
+
     let avgRating = 0;
     let totalRatings = 0;
-    
+
     if (instructorData.ratings) {
         const ratings = Object.values(instructorData.ratings);
         const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
         avgRating = (sum / ratings.length).toFixed(1);
         totalRatings = ratings.length;
     }
-    
+
     const bookingsRef = ref(database, 'bookings');
     const bookingsSnapshot = await get(bookingsRef);
     let totalEarnings = 0;
     let completedSessions = 0;
-    
+
     if (bookingsSnapshot.exists()) {
         bookingsSnapshot.forEach(childSnapshot => {
             const booking = childSnapshot.val();
@@ -785,12 +829,12 @@ async function loadInstructorDashboard() {
             }
         });
     }
-    
+
     // Display specializations
-    const specializationsDisplay = Array.isArray(instructorData.specializations) 
-        ? instructorData.specializations.join(', ') 
+    const specializationsDisplay = Array.isArray(instructorData.specializations)
+        ? instructorData.specializations.join(', ')
         : instructorData.specialization;
-    
+
     const dashboard = document.getElementById('instructorDashboard');
     dashboard.innerHTML = `
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 32px;">
@@ -812,6 +856,7 @@ async function loadInstructorDashboard() {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div style="grid-column: 1 / -1;"><strong>Specializations:</strong> ${specializationsDisplay}</div>
                 <div><strong>Location:</strong> ${instructorData.location}</div>
+                <div><strong>Landmark:</strong> ${instructorData.landmark || 'Not set'}</div>
                 <div><strong>Experience:</strong> ${instructorData.experience} years</div>
                 <div><strong>Hourly Rate:</strong> ₹${instructorData.hourlyRate}/hour</div>
             </div>
@@ -819,7 +864,6 @@ async function loadInstructorDashboard() {
     `;
 }
 
-// Continued with instructor features, bookings, notifications, etc...
 // ==================== PART 4: BOOKINGS, NOTIFICATIONS & UTILITIES ====================
 // NOTE: This should be appended after Part 3
 
@@ -828,22 +872,22 @@ async function loadInstructorProfile() {
     const instructorRef = ref(database, `instructors/${currentUser.uid}`);
     const snapshot = await get(instructorRef);
     const instructorData = snapshot.val();
-    
+
     let avgRating = 0;
     let totalRatings = 0;
-    
+
     if (instructorData.ratings) {
         const ratings = Object.values(instructorData.ratings);
         const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
         avgRating = (sum / ratings.length).toFixed(1);
         totalRatings = ratings.length;
     }
-    
+
     // Display specializations
-    const specializationsDisplay = Array.isArray(instructorData.specializations) 
-        ? instructorData.specializations.join(', ') 
+    const specializationsDisplay = Array.isArray(instructorData.specializations)
+        ? instructorData.specializations.join(', ')
         : instructorData.specialization;
-    
+
     const content = document.getElementById('instructorProfileContent');
     content.innerHTML = `
         <div style="background: var(--bg-secondary); padding: 32px; border-radius: var(--radius); margin-bottom: 24px;">
@@ -862,6 +906,7 @@ async function loadInstructorProfile() {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div style="grid-column: 1 / -1;"><strong>Specializations:</strong><br>${specializationsDisplay}</div>
                 <div><strong>Location:</strong><br>${instructorData.location}</div>
+                <div><strong>Landmark:</strong><br>${instructorData.landmark || 'Not specified'}</div>
                 <div><strong>Experience:</strong><br>${instructorData.experience} years</div>
                 <div><strong>Hourly Rate:</strong><br>₹${instructorData.hourlyRate}/hour</div>
                 <div><strong>Mobile:</strong><br>${instructorData.mobile}</div>
@@ -871,19 +916,19 @@ async function loadInstructorProfile() {
     `;
 }
 
-window.editInstructorProfile = async function() {
+window.editInstructorProfile = async function () {
     const instructorRef = ref(database, `instructors/${currentUser.uid}`);
     const snapshot = await get(instructorRef);
     const instructorData = snapshot.val();
-    
-    const specializationOptions = specializations.map(spec => 
+
+    const specializationOptions = specializations.map(spec =>
         `<option value="${spec}" ${spec === instructorData.specialization ? 'selected' : ''}>${spec}</option>`
     ).join('');
-    
-    const cityOptions = indianCities.map(city => 
+
+    const cityOptions = indianCities.map(city =>
         `<option value="${city}" ${city === instructorData.location ? 'selected' : ''}>${city}</option>`
     ).join('');
-    
+
     const modalHTML = `
         <div class="modal" id="editProfileModal">
             <div class="modal-content">
@@ -902,6 +947,10 @@ window.editInstructorProfile = async function() {
                             <label>Location *</label>
                             <input type="text" id="editLocation" value="${instructorData.location}" required list="editCityList">
                             <datalist id="editCityList">${cityOptions}</datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Nearest Landmark *</label>
+                            <input type="text" id="editLandmark" value="${instructorData.landmark || ''}" placeholder="e.g., Near Central Mall">
                         </div>
                         <div class="form-group">
                             <label>Mobile *</label>
@@ -928,28 +977,30 @@ window.editInstructorProfile = async function() {
             </div>
         </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-window.saveInstructorProfile = async function() {
+window.saveInstructorProfile = async function () {
     const specialization = document.getElementById('editSpecialization').value;
     const location = document.getElementById('editLocation').value;
+    const landmark = document.getElementById('editLandmark').value;
     const mobile = document.getElementById('editMobile').value;
     const experience = document.getElementById('editExperience').value;
     const hourlyRate = document.getElementById('editRate').value;
     const certifications = document.getElementById('editCertifications').value;
-    
+
     try {
         await update(ref(database, `instructors/${currentUser.uid}`), {
             specialization: specialization,
             location: location,
+            landmark: landmark,
             mobile: mobile,
             experience: parseInt(experience),
             hourlyRate: parseInt(hourlyRate),
             certifications: certifications
         });
-        
+
         closeModal('editProfileModal');
         alert('Profile updated successfully!');
         loadInstructorProfile();
@@ -963,15 +1014,15 @@ window.saveInstructorProfile = async function() {
 async function loadStudentBookings() {
     const bookingsRef = ref(database, 'bookings');
     const snapshot = await get(bookingsRef);
-    
+
     const currentBookings = [];
     const pastBookings = [];
-    
+
     if (snapshot.exists()) {
         snapshot.forEach(childSnapshot => {
             const booking = childSnapshot.val();
             booking.id = childSnapshot.key;
-            
+
             if (booking.studentId === currentUser.uid) {
                 if (booking.status === 'completed' || booking.status === 'rejected') {
                     pastBookings.push(booking);
@@ -981,10 +1032,10 @@ async function loadStudentBookings() {
             }
         });
     }
-    
+
     displayBookings(currentBookings, 'studentCurrentBookings', false);
     displayBookings(pastBookings, 'studentPastBookings', false);
-    
+
     setupBookingTabs('studentCurrentBookings', 'studentPastBookings');
 }
 
@@ -992,15 +1043,15 @@ async function loadStudentBookings() {
 async function loadInstructorBookings() {
     const bookingsRef = ref(database, 'bookings');
     const snapshot = await get(bookingsRef);
-    
+
     const currentBookings = [];
     const pastBookings = [];
-    
+
     if (snapshot.exists()) {
         snapshot.forEach(childSnapshot => {
             const booking = childSnapshot.val();
             booking.id = childSnapshot.key;
-            
+
             if (booking.instructorId === currentUser.uid) {
                 if (booking.status === 'completed' || booking.status === 'rejected') {
                     pastBookings.push(booking);
@@ -1010,28 +1061,28 @@ async function loadInstructorBookings() {
             }
         });
     }
-    
+
     displayBookings(currentBookings, 'instructorCurrentBookings', true);
     displayBookings(pastBookings, 'instructorPastBookings', true);
-    
+
     setupBookingTabs('instructorCurrentBookings', 'instructorPastBookings');
 }
 
 function displayBookings(bookings, containerId, isInstructor) {
     const container = document.getElementById(containerId);
-    
+
     if (bookings.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><p>No bookings found</p></div>';
         return;
     }
-    
+
     container.innerHTML = bookings.map(booking => {
         const otherPerson = isInstructor ? booking.studentName : booking.instructorName;
         let statusClass = 'status-pending';
         if (booking.status === 'accepted') statusClass = 'status-accepted';
         if (booking.status === 'rejected') statusClass = 'status-rejected';
         if (booking.status === 'completed') statusClass = 'status-completed';
-        
+
         let actionButtons = '';
         if (isInstructor && booking.status === 'pending') {
             actionButtons = `
@@ -1048,13 +1099,13 @@ function displayBookings(bookings, containerId, isInstructor) {
         } else if (!isInstructor && booking.status === 'completed' && !booking.rated) {
             actionButtons = `<button class="btn btn-primary" onclick="showRatingModal('${booking.id}', '${booking.instructorId}', '${booking.instructorName}')">Rate Instructor</button>`;
         }
-        
+
         // Show student contact for instructors
         let contactInfo = '';
         if (isInstructor && booking.studentMobile) {
             contactInfo = `<p><strong>Student Contact:</strong> ${booking.studentMobile}</p>`;
         }
-        
+
         return `
             <div class="booking-card">
                 <div class="booking-header">
@@ -1082,7 +1133,7 @@ function setupBookingTabs(currentId, pastId) {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
+
             if (btn.dataset.tab === 'current') {
                 document.getElementById(currentId).classList.remove('hidden');
                 document.getElementById(pastId).classList.add('hidden');
@@ -1094,31 +1145,31 @@ function setupBookingTabs(currentId, pastId) {
     });
 }
 
-window.respondToBooking = async function(bookingId, response) {
+window.respondToBooking = async function (bookingId, response) {
     try {
         const bookingRef = ref(database, `bookings/${bookingId}`);
         const snapshot = await get(bookingRef);
         const booking = snapshot.val();
-        
+
         const instructorRef = ref(database, `instructors/${booking.instructorId}`);
         const instructorSnapshot = await get(instructorRef);
         const instructor = instructorSnapshot.val();
-        
+
         const updateData = {
             status: response,
             respondedAt: Date.now()
         };
-        
+
         if (response === 'accepted') {
             updateData.instructorContact = instructor.mobile;
         }
-        
+
         await update(bookingRef, updateData);
-        
-        const notificationMessage = response === 'accepted' 
+
+        const notificationMessage = response === 'accepted'
             ? `${booking.instructorName} has accepted your booking! Contact: ${instructor.mobile}`
             : `${booking.instructorName} has declined your booking request.`;
-        
+
         const studentNotifRef = push(ref(database, `notifications/${booking.studentId}`));
         await set(studentNotifRef, {
             type: response === 'accepted' ? 'booking_accepted' : 'booking_rejected',
@@ -1127,7 +1178,7 @@ window.respondToBooking = async function(bookingId, response) {
             timestamp: Date.now(),
             read: false
         });
-        
+
         alert(response === 'accepted' ? 'Booking accepted!' : 'Booking rejected.');
         loadInstructorBookings();
     } catch (error) {
@@ -1137,7 +1188,7 @@ window.respondToBooking = async function(bookingId, response) {
 }
 
 // ==================== RATING MODAL ====================
-window.showRatingModal = function(bookingId, instructorId, instructorName) {
+window.showRatingModal = function (bookingId, instructorId, instructorName) {
     const modalHTML = `
         <div class="modal" id="ratingModal">
             <div class="modal-content">
@@ -1176,15 +1227,15 @@ window.showRatingModal = function(bookingId, instructorId, instructorName) {
             </div>
         </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
+
     const stars = document.querySelectorAll('#ratingStars span');
     stars.forEach(star => {
         star.addEventListener('click', () => {
             const rating = parseInt(star.dataset.rating);
             document.getElementById('selectedRating').value = rating;
-            
+
             stars.forEach((s, index) => {
                 if (index < rating) {
                     s.textContent = '★';
@@ -1198,23 +1249,23 @@ window.showRatingModal = function(bookingId, instructorId, instructorName) {
     });
 }
 
-window.submitRating = async function(bookingId, instructorId, instructorName) {
+window.submitRating = async function (bookingId, instructorId, instructorName) {
     const showedUp = document.getElementById('instructorShowedUp').value;
     const rating = parseInt(document.getElementById('selectedRating').value);
     const review = document.getElementById('ratingReview').value;
-    
+
     if (rating === 0) {
         alert('Please select a rating');
         return;
     }
-    
+
     try {
         await update(ref(database, `bookings/${bookingId}`), {
             status: 'completed',
             rated: true,
             showedUp: showedUp === 'yes'
         });
-        
+
         const ratingRef = push(ref(database, `instructors/${instructorId}/ratings`));
         await set(ratingRef, {
             studentId: currentUser.uid,
@@ -1224,7 +1275,7 @@ window.submitRating = async function(bookingId, instructorId, instructorName) {
             showedUp: showedUp === 'yes',
             timestamp: Date.now()
         });
-        
+
         const studentNotifRef = push(ref(database, `notifications/${currentUser.uid}`));
         await set(studentNotifRef, {
             type: 'rating_submitted',
@@ -1232,7 +1283,7 @@ window.submitRating = async function(bookingId, instructorId, instructorName) {
             timestamp: Date.now(),
             read: false
         });
-        
+
         closeModal('ratingModal');
         alert('Thank you for your feedback!');
         loadStudentBookings();
@@ -1246,10 +1297,10 @@ window.submitRating = async function(bookingId, instructorId, instructorName) {
 async function loadStudentNotifications() {
     const notifRef = ref(database, `notifications/${currentUser.uid}`);
     const snapshot = await get(notifRef);
-    
+
     const notifications = [];
     let unreadCount = 0;
-    
+
     if (snapshot.exists()) {
         snapshot.forEach(childSnapshot => {
             const notif = childSnapshot.val();
@@ -1258,9 +1309,9 @@ async function loadStudentNotifications() {
             if (!notif.read) unreadCount++;
         });
     }
-    
+
     notifications.sort((a, b) => b.timestamp - a.timestamp);
-    
+
     const badge = document.getElementById('studentNotificationBadge');
     if (unreadCount > 0) {
         badge.textContent = unreadCount;
@@ -1268,17 +1319,17 @@ async function loadStudentNotifications() {
     } else {
         badge.classList.add('hidden');
     }
-    
+
     displayNotifications(notifications, 'studentNotificationsList');
 }
 
 async function loadInstructorNotifications() {
     const notifRef = ref(database, `notifications/${currentUser.uid}`);
     const snapshot = await get(notifRef);
-    
+
     const notifications = [];
     let unreadCount = 0;
-    
+
     if (snapshot.exists()) {
         snapshot.forEach(childSnapshot => {
             const notif = childSnapshot.val();
@@ -1287,9 +1338,9 @@ async function loadInstructorNotifications() {
             if (!notif.read) unreadCount++;
         });
     }
-    
+
     notifications.sort((a, b) => b.timestamp - a.timestamp);
-    
+
     const badge = document.getElementById('instructorNotificationBadge');
     if (unreadCount > 0) {
         badge.textContent = unreadCount;
@@ -1297,18 +1348,18 @@ async function loadInstructorNotifications() {
     } else {
         badge.classList.add('hidden');
     }
-    
+
     displayNotifications(notifications, 'instructorNotificationsList');
 }
 
 function displayNotifications(notifications, containerId) {
     const container = document.getElementById(containerId);
-    
+
     if (notifications.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔔</div><p>No notifications</p></div>';
         return;
     }
-    
+
     container.innerHTML = notifications.map(notif => {
         const timeAgo = getTimeAgo(notif.timestamp);
         return `
@@ -1335,7 +1386,7 @@ function getTimeAgo(timestamp) {
 async function markStudentNotificationsAsRead() {
     const notifRef = ref(database, `notifications/${currentUser.uid}`);
     const snapshot = await get(notifRef);
-    
+
     if (snapshot.exists()) {
         snapshot.forEach(async (childSnapshot) => {
             const notif = childSnapshot.val();
@@ -1346,14 +1397,14 @@ async function markStudentNotificationsAsRead() {
             }
         });
     }
-    
+
     document.getElementById('studentNotificationBadge').classList.add('hidden');
 }
 
 async function markInstructorNotificationsAsRead() {
     const notifRef = ref(database, `notifications/${currentUser.uid}`);
     const snapshot = await get(notifRef);
-    
+
     if (snapshot.exists()) {
         snapshot.forEach(async (childSnapshot) => {
             const notif = childSnapshot.val();
@@ -1364,7 +1415,7 @@ async function markInstructorNotificationsAsRead() {
             }
         });
     }
-    
+
     document.getElementById('instructorNotificationBadge').classList.add('hidden');
 }
 
@@ -1381,7 +1432,7 @@ function setupInstructorNotificationListener() {
 async function checkPendingRatings() {
     const bookingsRef = ref(database, 'bookings');
     const snapshot = await get(bookingsRef);
-    
+
     if (snapshot.exists()) {
         snapshot.forEach(childSnapshot => {
             const booking = childSnapshot.val();
@@ -1401,7 +1452,7 @@ async function checkPendingRatings() {
 }
 
 // ==================== UTILITY FUNCTIONS ====================
-window.closeModal = function(modalId) {
+window.closeModal = function (modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.remove();
 }
