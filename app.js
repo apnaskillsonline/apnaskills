@@ -595,11 +595,11 @@ window.showBookingModal = async function (instructorId) {
                         <div class="form-group">
                             <label>Your Mobile Number *</label>
                             <input type="tel" id="studentMobile" required placeholder="+91 XXXXXXXXXX" pattern="[+0-9]{10,15}">
-                            <small style="color: var(--text-secondary); display: block; margin-top: 4px;">Required to share with instructor after booking confirmation</small>
+                            <small style="color: var(--text-secondary display: block; margin-top: 4px;">Required to share with instructor after booking confirmation</small>
                         </div>
                         ` : ''}
                         <div class="form-group">
-                            <label>Subject/Class for Tuition *</label>
+                            <label>Session Requirements*</label>
                             <input type="text" id="subjectClass" required placeholder="e.g., Mathematics Class 10th, All Subjects Class 1-5">
                             <small style="color: var(--text-secondary); display: block; margin-top: 4px;">Specify the subject and class level you need help with</small>
                         </div>
@@ -1563,3 +1563,4 @@ document.addEventListener('click', (e) => {
         e.target.remove();
     }
 });
+
