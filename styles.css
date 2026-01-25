@@ -1,9 +1,12 @@
 /* ==================== ROOT VARIABLES ==================== */
 :root {
-    --primary: #6366f1;
-    --primary-dark: #4f46e5;
-    --secondary: #8b5cf6;
-    --accent: #ec4899;
+    --brand-blue: #1a377a;
+    --brand-green: #63a79b;
+    --primary: var(--brand-blue);
+    --primary-dark: #102453;
+    --secondary: var(--brand-green);
+    --accent: #fdec2e;
+    /* Firefly yellow */
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
@@ -14,11 +17,71 @@
     --text-secondary: #64748b;
     --text-light: #94a3b8;
     --border: #e2e8f0;
-    --shadow: 0 1px 3px rgba(0,0,0,0.1);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
     --radius: 12px;
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================== VISUAL UPDATES ==================== */
+.brand-apna {
+    color: var(--brand-blue) !important;
+    background: none !important;
+    -webkit-text-fill-color: initial !important;
+}
+
+.brand-skills {
+    color: var(--brand-green) !important;
+    background: none !important;
+    -webkit-text-fill-color: initial !important;
+}
+
+.brand-logo-img {
+    height: 40px;
+    width: auto;
+    vertical-align: middle;
+    margin-right: 10px;
+    border-radius: 6px;
+}
+
+/* Firefly Animation */
+.firefly {
+    position: fixed;
+    border-radius: 50%;
+    background-color: #fdec2e;
+    box-shadow: 0 0 10px 2px #fdec2e, 0 0 20px 5px #ffeb3b;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.8;
+    animation: fly 15s linear infinite;
+}
+
+@keyframes fly {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.8;
+    }
+
+    25% {
+        transform: translate(100px, -50px) scale(1.2);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: translate(50px, 100px) scale(0.8);
+        opacity: 0.9;
+    }
+
+    75% {
+        transform: translate(-50px, 50px) scale(1.1);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.8;
+    }
 }
 
 /* ==================== RESET & BASE ==================== */
@@ -30,10 +93,13 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--bg-secondary);
+    /* Wide linear gradient background */
+    background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-green) 100%);
+    background-attachment: fixed;
     color: var(--text-primary);
     line-height: 1.6;
     overflow-x: hidden;
+    min-height: 100vh;
 }
 
 /* ==================== UTILITY CLASSES ==================== */
@@ -130,7 +196,30 @@ body {
     position: absolute;
     width: 500px;
     height: 500px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    top: -250px;
+    right: -250px;
+}
+
+/* ==================== LOGIN PAGE ==================== */
+#loginPage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Use the same gradient as body, or transparent if body covers it */
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+#loginPage::before {
+    content: '';
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
     top: -250px;
     right: -250px;
@@ -141,7 +230,7 @@ body {
     position: absolute;
     width: 300px;
     height: 300px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
     bottom: -150px;
     left: -150px;
@@ -151,7 +240,7 @@ body {
     background: white;
     padding: 60px 50px;
     border-radius: 24px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     text-align: center;
     max-width: 450px;
     width: 90%;
@@ -165,6 +254,7 @@ body {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -582,7 +672,7 @@ nav {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -607,6 +697,7 @@ nav {
         opacity: 0;
         transform: translateY(-50px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -886,12 +977,14 @@ nav {
     display: inline-block;
     width: 20px;
     height: 20px;
-    border: 3px solid rgba(255,255,255,.3);
+    border: 3px solid rgba(255, 255, 255, .3);
     border-radius: 50%;
     border-top-color: white;
     animation: spin 1s ease-in-out infinite;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
