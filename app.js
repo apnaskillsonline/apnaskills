@@ -811,16 +811,19 @@ ${description ? 'Details: ' + description : ''}`,
 }
 
 // ==================== BECOME INSTRUCTOR ====================
-document.getElementById('becomeInstructorBtn').addEventListener('click', () => {
-    const specializationOptions = specializations.map(spec =>
-        `<option value="${spec}">${spec}</option>`
-    ).join('');
+// ==================== BECOME INSTRUCTOR ====================
+document.querySelectorAll('.become-instructor-trigger').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const specializationOptions = specializations.map(spec =>
+            `<option value="${spec}">${spec}</option>`
+        ).join('');
 
-    const cityOptions = indianCities.map(city =>
-        `<option value="${city}">${city}</option>`
-    ).join('');
+        const cityOptions = indianCities.map(city =>
+            `<option value="${city}">${city}</option>`
+        ).join('');
 
-    const modalHTML = `
+        const modalHTML = `
         <div class="modal" id="becomeInstructorModal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -887,7 +890,8 @@ document.getElementById('becomeInstructorBtn').addEventListener('click', () => {
         </div>
     `;
 
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    });
 });
 
 window.addCustomSpec = function () {
