@@ -629,7 +629,7 @@ nav {
 }
 
 .become-tutor-banner h2 {
-    color: #38bdf8;
+    color: #63a79b;
     /* Light blue accent */
     margin-bottom: 16px;
     font-size: 32px;
@@ -919,4 +919,5 @@ nav {
         transform: rotate(360deg);
     }
 }
+
 
