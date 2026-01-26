@@ -635,7 +635,9 @@ nav {
     font-size: 32px;
     font-weight: 800;
 }
-
+.become-tutor-banner p{
+    color: #059669;
+}
 /* ==================== MODAL ==================== */
 .modal {
     position: fixed;
@@ -919,3 +921,4 @@ nav {
         transform: rotate(360deg);
     }
 }
+
