@@ -618,7 +618,7 @@ nav {
 /* Become Instructor Banner */
 .become-tutor-banner {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: white;
+    color: #63a79b;
     padding: 50px;
     border-radius: 16px;
     text-align: center;
@@ -919,3 +919,4 @@ nav {
         transform: rotate(360deg);
     }
 }
+
