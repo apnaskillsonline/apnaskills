@@ -629,11 +629,15 @@ nav {
 }
 
 .become-tutor-banner h2 {
-    color: #63a79b;
+    color: .become-tutor-banner h2 {
+    color: #63a79b;;
     /* Light blue accent */
     margin-bottom: 16px;
     font-size: 32px;
     font-weight: 800;
+}
+.become-tutor-banner p {
+    color: #63a79b;
 }
 
 /* ==================== MODAL ==================== */
