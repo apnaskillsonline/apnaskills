@@ -40,21 +40,21 @@
 
 /* ==================== VISUAL UPDATES ==================== */
 .brand-apna {
-    color: #3b82f6 !important;
-    /* Reverted to Blue */
-    background: none !important;
-    -webkit-text-fill-color: initial !important;
-}
-
-.brand-skills {
     color: #059669 !important;
     /* Green */
     background: none !important;
     -webkit-text-fill-color: initial !important;
 }
 
+.brand-skills {
+    color: #3b82f6 !important;
+    /* Blue */
+    background: none !important;
+    -webkit-text-fill-color: initial !important;
+}
+
 .text-gradient-blue-green {
-    background: linear-gradient(135deg, #2563eb 0%, #059669 100%);
+    background: linear-gradient(135deg, #059669 0%, #2563eb 100%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -618,7 +618,7 @@ nav {
 /* Become Instructor Banner */
 .become-tutor-banner {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: #63a79b;
+    color: white;
     padding: 50px;
     border-radius: 16px;
     text-align: center;
@@ -629,15 +629,11 @@ nav {
 }
 
 .become-tutor-banner h2 {
-    color: .become-tutor-banner h2 {
     color: #38bdf8;
     /* Light blue accent */
     margin-bottom: 16px;
     font-size: 32px;
     font-weight: 800;
-}
-.become-tutor-banner p {
-    color: #63a79b;
 }
 
 /* ==================== MODAL ==================== */
@@ -923,6 +919,3 @@ nav {
         transform: rotate(360deg);
     }
 }
-
-
-
