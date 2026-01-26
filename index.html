@@ -32,21 +32,32 @@
                     <img src="logo.jpeg" class="brand-logo-img" alt="Logo">
                     <span class="brand-apna">Apna</span><span class="brand-skills">Skills</span>
                 </div>
-                <div class="nav-menu">
-                    <a href="#" class="nav-link active" data-page="home">Home</a>
-                    <a href="#" class="nav-link" data-page="bookings">My Bookings</a>
-                    <a href="#" class="nav-link" data-page="notifications" style="position: relative;">
-                        Notifications
-                        <span id="studentNotificationBadge" class="notification-badge hidden">0</span>
-                    </a>
-                    <div class="user-profile" id="studentUserProfile">
-                        <img id="studentUserAvatar" class="user-avatar" src="" alt="User">
-                        <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                            <span id="studentUserName"></span>
-                            <span style="font-size: 11px; color: var(--primary); font-weight: 600;">👨‍🎓 Student</span>
+                <div class="menu-container">
+                    <button class="icon-btn" id="studentNotificationTrigger">
+                        🔔
+                        <span id="studentNotificationBadge" class="notification-badge-icon hidden">0</span>
+                    </button>
+
+                    <button class="hamburger-btn" id="studentMenuBtn">
+                        <span class="bar"></span>
+                        <span class="bar"></span>
+                        <span class="bar"></span>
+                    </button>
+
+                    <div class="dropdown-menu" id="studentDropdown">
+                        <div class="menu-header">
+                            <img id="studentUserAvatarMenu" class="menu-user-avatar" src="" alt="User">
+                            <div>
+                                <span class="menu-user-name" id="studentUserNameMenu">Student</span>
+                                <span class="menu-user-role">👨‍🎓 Student</span>
+                            </div>
                         </div>
+                        <button class="menu-item nav-link" data-page="home">🏠 Home</button>
+                        <button class="menu-item nav-link" data-page="bookings">📅 My Bookings</button>
+                        <button class="menu-item nav-link" data-page="notifications">🔔 Notifications</button>
+                        <div class="menu-divider"></div>
+                        <button class="menu-item danger" id="studentLogoutBtn">🚪 Logout</button>
                     </div>
-                    <button id="studentLogoutBtn" class="btn btn-secondary">Logout</button>
                 </div>
             </nav>
         </header>
@@ -88,7 +99,7 @@
 
                 <!-- Become Instructor Banner -->
                 <div class="become-tutor-banner" id="becomeInstructorBanner">
-                    <h2>Share Your Knowledge</h2>
+                    <h2 class="text-gradient-blue-green">Share Your Knowledge</h2>
                     <p>Join our community of expert instructors and help learners achieve their goals</p>
                     <button class="btn btn-primary" id="becomeInstructorBtn">Become an Instructor</button>
                 </div>
@@ -183,23 +194,34 @@
                     <img src="logo.jpeg" class="brand-logo-img" alt="Logo">
                     <span class="brand-apna">Apna</span><span class="brand-skills">Skills</span> - Instructor
                 </div>
-                <div class="nav-menu">
-                    <a href="#" class="nav-link active" data-page="instructor-home">Dashboard</a>
-                    <a href="#" class="nav-link" data-page="instructor-bookings">My Bookings</a>
-                    <a href="#" class="nav-link" data-page="instructor-profile">My Profile</a>
-                    <a href="#" class="nav-link" data-page="instructor-notifications" style="position: relative;">
-                        Notifications
-                        <span id="instructorNotificationBadge" class="notification-badge hidden">0</span>
-                    </a>
-                    <div class="user-profile" id="instructorUserProfile">
-                        <img id="instructorUserAvatar" class="user-avatar" src="" alt="User">
-                        <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                            <span id="instructorUserName"></span>
-                            <span style="font-size: 11px; color: var(--primary); font-weight: 600;">👨‍🏫
-                                Instructor</span>
+                <div class="menu-container">
+                    <button class="icon-btn" id="instructorNotificationTrigger">
+                        🔔
+                        <span id="instructorNotificationBadge" class="notification-badge-icon hidden">0</span>
+                    </button>
+
+                    <button class="hamburger-btn" id="instructorMenuBtn">
+                        <span class="bar"></span>
+                        <span class="bar"></span>
+                        <span class="bar"></span>
+                    </button>
+
+                    <div class="dropdown-menu" id="instructorDropdown">
+                        <div class="menu-header">
+                            <img id="instructorUserAvatarMenu" class="menu-user-avatar" src="" alt="User">
+                            <div>
+                                <span class="menu-user-name" id="instructorUserNameMenu">Instructor</span>
+                                <span class="menu-user-role">👨‍🏫 Instructor</span>
+                            </div>
                         </div>
+                        <button class="menu-item nav-link" data-page="instructor-home">📊 Dashboard</button>
+                        <button class="menu-item nav-link" data-page="instructor-bookings">📅 My Bookings</button>
+                        <button class="menu-item nav-link" data-page="instructor-profile">👤 My Profile</button>
+                        <button class="menu-item nav-link" data-page="instructor-notifications">🔔
+                            Notifications</button>
+                        <div class="menu-divider"></div>
+                        <button class="menu-item danger" id="instructorLogoutBtn">🚪 Logout</button>
                     </div>
-                    <button id="instructorLogoutBtn" class="btn btn-secondary">Logout</button>
                 </div>
             </nav>
         </header>
