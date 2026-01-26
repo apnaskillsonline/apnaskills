@@ -109,16 +109,16 @@ onAuthStateChanged(auth, async (user) => {
         if (currentUserData.isInstructor) {
             // Show instructor interface
             document.getElementById('instructorApp').classList.remove('hidden');
-            document.getElementById('instructorUserName').textContent = user.displayName;
-            document.getElementById('instructorUserAvatar').src = user.photoURL;
+            document.getElementById('instructorUserNameMenu').textContent = user.displayName;
+            document.getElementById('instructorUserAvatarMenu').src = user.photoURL;
             await loadInstructorDashboard();
             await loadInstructorNotifications();
             setupInstructorNotificationListener();
         } else {
             // Show student interface
             document.getElementById('studentApp').classList.remove('hidden');
-            document.getElementById('studentUserName').textContent = user.displayName;
-            document.getElementById('studentUserAvatar').src = user.photoURL;
+            document.getElementById('studentUserNameMenu').textContent = user.displayName;
+            document.getElementById('studentUserAvatarMenu').src = user.photoURL;
             await loadInstructors();
             await loadCategories();
             await loadStudentNotifications();
@@ -135,6 +135,45 @@ onAuthStateChanged(auth, async (user) => {
 
 document.getElementById('studentLogoutBtn').addEventListener('click', () => signOut(auth));
 document.getElementById('instructorLogoutBtn').addEventListener('click', () => signOut(auth));
+
+// ==================== MENU LOGIC ====================
+function setupMenu(btnId, menuId) {
+    const btn = document.getElementById(btnId);
+    const menu = document.getElementById(menuId);
+
+    if (btn && menu) {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Close other menus first
+            document.querySelectorAll('.dropdown-menu.active').forEach(m => {
+                if (m.id !== menuId) m.classList.remove('active');
+            });
+            menu.classList.toggle('active');
+        });
+    }
+}
+
+setupMenu('studentMenuBtn', 'studentDropdown');
+setupMenu('instructorMenuBtn', 'instructorDropdown');
+
+// Close menus when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.menu-container')) {
+        document.querySelectorAll('.dropdown-menu.active').forEach(menu => {
+            menu.classList.remove('active');
+        });
+    }
+});
+
+// Close menu when clicking an item
+document.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('click', () => {
+        document.querySelectorAll('.dropdown-menu.active').forEach(menu => {
+            menu.classList.remove('active');
+        });
+    });
+});
+
 
 // ==================== STUDENT NAVIGATION ====================
 document.querySelectorAll('#studentApp .nav-link').forEach(link => {
@@ -619,7 +658,7 @@ window.showBookingModal = async function (instructorId) {
         <div class="modal" id="bookingModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 class="modal-title">Book Session with ${instructor.name}</h2>
+                    <h2 class="modal-title text-gradient-blue-green">Book Session with ${instructor.name}</h2>
                     <button class="modal-close" onclick="closeModal('bookingModal')">&times;</button>
                 </div>
                 <div class="modal-body">
