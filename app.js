@@ -107,13 +107,19 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('loginPage').classList.add('hidden');
 
         if (currentUserData.isInstructor) {
-            // Show instructor interface
-            document.getElementById('instructorApp').classList.remove('hidden');
-            document.getElementById('instructorUserNameMenu').textContent = user.displayName;
-            document.getElementById('instructorUserAvatarMenu').src = user.photoURL;
-            await loadInstructorDashboard();
-            await loadInstructorNotifications();
-            setupInstructorNotificationListener();
+            // ✅ SOLUTION: Show student app (home page) instead of instructor app
+            document.getElementById('studentApp').classList.remove('hidden');
+            document.getElementById('studentUserNameMenu').textContent = user.displayName;
+            document.getElementById('studentUserAvatarMenu').src = user.photoURL;
+            
+            // Load student features so instructor can see home page
+            await loadInstructors();
+            await loadCategories();
+            await loadStudentNotifications();
+            setupStudentNotificationListener();
+            
+            // Also add "Switch to Dashboard" button in menu
+            addDashboardSwitchButton();
         } else {
             // Show student interface
             document.getElementById('studentApp').classList.remove('hidden');
@@ -1639,4 +1645,5 @@ document.addEventListener('click', (e) => {
         e.target.remove();
     }
 });
+
 
