@@ -1646,4 +1646,60 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// ==================== ADD DASHBOARD SWITCH BUTTON ====================
+function addDashboardSwitchButton() {
+    // Find the "Become Instructor" button and replace it with "Dashboard" button
+    const becomeInstructorBtn = document.querySelector('#studentDropdown .become-instructor-trigger');
+    
+    if (becomeInstructorBtn && currentUserData.isInstructor) {
+        // Replace "Become Instructor" with "Go to Dashboard"
+        becomeInstructorBtn.innerHTML = '📊 Dashboard';
+        becomeInstructorBtn.classList.remove('become-instructor-trigger');
+        
+        // Add click handler to switch to instructor app
+        becomeInstructorBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            // Hide student app
+            document.getElementById('studentApp').classList.add('hidden');
+            
+            // Show instructor app
+            document.getElementById('instructorApp').classList.remove('hidden');
+            document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
+            document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
+            
+            // Load instructor features
+            await loadInstructorDashboard();
+            await loadInstructorNotifications();
+            setupInstructorNotificationListener();
+        });
+    }
+}
+
+// ==================== HOME BUTTON LISTENER ====================
+document.addEventListener('DOMContentLoaded', () => {
+    // Add event listener for "Home" button in instructor menu
+    const switchToHomeBtn = document.getElementById('switchToHomeBtn');
+    if (switchToHomeBtn) {
+        switchToHomeBtn.addEventListener('click', async () => {
+            // Hide instructor app
+            document.getElementById('instructorApp').classList.add('hidden');
+            
+            // Show student app (home page)
+            document.getElementById('studentApp').classList.remove('hidden');
+            document.getElementById('studentUserNameMenu').textContent = currentUser.displayName;
+            document.getElementById('studentUserAvatarMenu').src = currentUser.photoURL;
+            
+            // Reload home page content
+            await loadInstructors();
+            await loadCategories();
+            
+            // Show home page
+            document.querySelectorAll('#studentApp .page-content').forEach(p => p.classList.add('hidden'));
+            document.getElementById('studentHomePage').classList.remove('hidden');
+        });
+    }
+});
+
+
 
