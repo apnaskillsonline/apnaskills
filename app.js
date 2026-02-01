@@ -119,16 +119,46 @@ onAuthStateChanged(auth, async (user) => {
             setupStudentNotificationListener();
             
             // Also add "Switch to Dashboard" button in menu
-            addDashboardSwitchButton();
-        } else {
-            // Show student interface
-            document.getElementById('studentApp').classList.remove('hidden');
-            document.getElementById('studentUserNameMenu').textContent = user.displayName;
-            document.getElementById('studentUserAvatarMenu').src = user.photoURL;
-            await loadInstructors();
-            await loadCategories();
-            await loadStudentNotifications();
-            setupStudentNotificationListener();
+           function addDashboardSwitchButton() {
+    const becomeInstructorBtn = document.querySelector('#studentDropdown .become-instructor-trigger');
+    const profileBtn = document.getElementById('studentMenuProfileBtn');
+    
+    if (becomeInstructorBtn && currentUserData.isInstructor) {
+        // Replace "Become Instructor" with "Go to Dashboard"
+        becomeInstructorBtn.innerHTML = '📊 Dashboard';
+        becomeInstructorBtn.classList.remove('become-instructor-trigger');
+        
+        // Show profile button for instructors
+        if (profileBtn) {
+            profileBtn.style.display = 'block';
+            profileBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                // Switch to instructor app and show profile
+                document.getElementById('studentApp').classList.add('hidden');
+                document.getElementById('instructorApp').classList.remove('hidden');
+                document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
+                document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
+                
+                // Show profile page
+                document.querySelectorAll('#instructorApp .page-content').forEach(p => p.classList.add('hidden'));
+                document.getElementById('instructorProfilePage').classList.remove('hidden');
+                await loadInstructorProfile();
+            });
+        }
+        
+        // Add click handler to switch to instructor app
+        becomeInstructorBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            document.getElementById('studentApp').classList.add('hidden');
+            document.getElementById('instructorApp').classList.remove('hidden');
+            document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
+            document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
+            await loadInstructorDashboard();
+            await loadInstructorNotifications();
+            setupInstructorNotificationListener();
+        });
+    }
+}
         }
 
         setTimeout(() => checkPendingRatings(), 2000);
@@ -1700,6 +1730,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
 
 
 
