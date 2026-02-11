@@ -153,21 +153,23 @@ async function loadStudentApp() {
     document.getElementById('studentUserNameMenu').textContent = state.user.displayName;
     document.getElementById('studentUserAvatarMenu').src = state.user.photoURL;
 
-    // Handle "Become Instructor" button visibility
-    const becomeBtn = document.getElementById('becomeInstructorBtn');
-    if (state.profile.isInstructor) {
-        becomeBtn.innerHTML = '📊 Switch to Dashboard';
-        becomeBtn.onclick = (e) => {
-            e.preventDefault();
-            loadInstructorApp();
-        };
-    } else {
-        becomeBtn.onclick = (e) => {
-            e.preventDefault();
-            // Simple alert for now, could be a full modal
-            alert("To become an instructor, please contact support or wait for the registration feature.");
-        };
-    }
+    // Handle "Become Instructor" buttons
+    const becomeBtns = document.querySelectorAll('.become-instructor-trigger');
+    becomeBtns.forEach(btn => {
+        if (state.profile.isInstructor) {
+            btn.innerHTML = '📊 Switch to Dashboard';
+            btn.onclick = (e) => {
+                e.preventDefault();
+                loadInstructorApp();
+            };
+        } else {
+            console.log("Setting up click for:", btn);
+            btn.onclick = (e) => {
+                e.preventDefault();
+                alert("To become an instructor, please contact support or wait for the registration feature.");
+            };
+        }
+    });
 
     // Load Data
     await loadInstructors();
