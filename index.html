@@ -6,320 +6,221 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ApnaSkills - Find Your Perfect Instructor</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
-    <!-- ==================== LOGIN PAGE ==================== -->
-    <div id="loginPage">
-        <div class="login-container">
-            <div class="logo">
-                <span class="brand-apna">Apna</span><span class="brand-skills">Skills</span>
+
+    <!-- ==================== LOGIN SECTION ==================== -->
+    <section id="loginPage" class="full-screen-center">
+        <div class="login-card">
+            <div class="brand-logo">
+                <span class="text-brand-green">Apna</span><span class="text-brand-blue">Skills</span>
             </div>
-            <p class="login-subtitle">Find the perfect instructor for your learning journey</p>
+            <p class="login-subtitle">Connect with expert instructors for personalized learning.</p>
             <button id="googleLoginBtn" class="btn btn-google">
-                <span>🔐</span> Sign in with Google
+                <span class="icon">🔐</span> Sign in with Google
             </button>
         </div>
-    </div>
+    </section>
 
-    <!-- ==================== MAIN APP - STUDENT VIEW ==================== -->
-    <div id="studentApp" class="hidden">
+    <!-- ==================== STUDENT APP ==================== -->
+    <div id="studentApp" class="app-container hidden">
         <!-- Header -->
-        <header>
-            <nav>
+        <header class="app-header">
+            <div class="nav-container">
                 <div class="nav-brand">
-                    <span class="brand-apna">Apna</span><span class="brand-skills">Skills</span>
+                    <span class="text-brand-green">Apna</span><span class="text-brand-blue">Skills</span>
                 </div>
-                <div class="menu-container">
-                    <button class="icon-btn" id="studentNotificationTrigger">
-                        🔔
-                        <span id="studentNotificationBadge" class="notification-badge-icon hidden">0</span>
+
+                <div class="nav-actions">
+                    <!-- Notifications -->
+                    <div class="notification-wrapper">
+                        <button id="studentNotificationTrigger" class="icon-btn">🔔</button>
+                        <span id="studentNotificationBadge" class="badge hidden">0</span>
+                    </div>
+
+                    <!-- Hamburger Menu -->
+                    <button id="studentMenuBtn" class="hamburger-btn">
+                        <span></span><span></span><span></span>
                     </button>
 
-                    <button class="hamburger-btn" id="studentMenuBtn">
-                        <span class="bar"></span>
-                        <span class="bar"></span>
-                        <span class="bar"></span>
-                    </button>
-
-                    <div class="dropdown-menu" id="studentDropdown">
-                        <div class="menu-header">
-                            <img id="studentUserAvatarMenu" class="menu-user-avatar" src="" alt="User">
+                    <!-- Dropdown -->
+                    <div id="studentDropdown" class="dropdown-menu">
+                        <div class="menu-user-info">
+                            <img id="studentUserAvatarMenu" src="" alt="User" class="avatar-small">
                             <div>
-                                <span class="menu-user-name" id="studentUserNameMenu">Student</span>
-                                <span class="menu-user-role">👨‍🎓 Student</span>
+                                <span id="studentUserNameMenu" class="user-name">Student</span>
+                                <span class="user-role">👨‍🎓 Student</span>
                             </div>
                         </div>
-                        <button class="menu-item nav-link" data-page="home">🏠 Home</button>
-                        <button class="menu-item nav-link" data-page="bookings">📅 My Bookings</button>
-                        <button class="menu-item nav-link" data-page="notifications">🔔 Notifications</button>
-                        <button class="menu-item" id="studentMenuProfileBtn" style="display:none;">👤 My Profile</button>
-                        <button class="menu-item become-instructor-trigger">🎓 Become Instructor</button>
-                        <div class="menu-divider"></div>
-                        <button class="menu-item danger" id="studentLogoutBtn">🚪 Logout</button>
+                        <nav class="menu-links">
+                            <a href="#" class="menu-item active" data-page="home">🏠 Home</a>
+                            <a href="#" class="menu-item" data-page="bookings">📅 My Bookings</a>
+                            <a href="#" class="menu-item" data-page="notifications">🔔 Notifications</a>
+                            <a href="#" class="menu-item" id="studentMenuProfileBtn" style="display:none;">👤 My
+                                Profile</a>
+                            <a href="#" class="menu-item highlight" id="becomeInstructorBtn">🎓 Become Instructor</a>
+                            <div class="divider"></div>
+                            <a href="#" class="menu-item danger" id="studentLogoutBtn">🚪 Logout</a>
+                        </nav>
                     </div>
                 </div>
-            </nav>
+            </div>
         </header>
 
-        <!-- Home Page -->
-        <div id="studentHomePage" class="page-content">
-            <div class="hero-section">
+        <!-- Page Content: HOME -->
+        <main id="studentHomePage" class="page-content">
+            <!-- Hero -->
+            <section class="hero">
                 <div class="container">
-                    <h1 class="hero-title">Learn Anything, Anytime, Anywhere</h1>
-                    <p class="hero-subtitle">Connect with expert instructors for personalized learning experiences</p>
+                    <h1>Learn Anything, <span class="text-gradient">Anytime</span>, Anywhere</h1>
+                    <p>Find the perfect tutor for academics, arts, fitness, and more.</p>
                 </div>
-            </div>
+            </section>
 
-            <div class="container">
-                <!-- Search Section -->
-                <div class="search-container">
-                    <form class="search-form" id="studentSearchForm">
-                        <div class="input-group" style="position: relative;">
-                            <label for="studentLocationInput">Location</label>
-                            <input type="text" id="studentLocationInput" placeholder="Select city or type your own"
+            <!-- Search -->
+            <section class="search-section container">
+                <div class="search-box">
+                    <form id="studentSearchForm">
+                        <div class="input-group">
+                            <label>Location</label>
+                            <input type="text" id="studentLocationInput" placeholder="City or area..."
                                 autocomplete="off">
-                            <div id="studentLocationSuggestions" class="suggestions-dropdown hidden"></div>
-                            <small style="color: var(--text-secondary); font-size: 11px; margin-top: 4px;">💡 Type any
-                                city or area</small>
+                            <div id="studentLocationSuggestions" class="suggestions hidden"></div>
                         </div>
-                        <div class="input-group" style="position: relative;">
-                            <label for="studentSpecializationInput">Specialization</label>
-                            <input type="text" id="studentSpecializationInput"
-                                placeholder="Select subject or type your own" autocomplete="off">
-                            <div id="studentSpecializationSuggestions" class="suggestions-dropdown hidden"></div>
-                            <small style="color: var(--text-secondary); font-size: 11px; margin-top: 4px;">💡 Type any
-                                subject you need</small>
+                        <div class="input-group">
+                            <label>Specialization</label>
+                            <input type="text" id="studentSpecializationInput" placeholder="Subject, skill..."
+                                autocomplete="off">
+                            <div id="studentSpecializationSuggestions" class="suggestions hidden"></div>
                         </div>
-                        <button type="submit" class="btn btn-primary" style="align-self: flex-end;">Search</button>
+                        <button type="submit" class="btn btn-primary">Search</button>
                     </form>
-                    <button type="button" class="btn btn-secondary" id="studentClearSearchBtn"
-                        style="margin-top: 16px;">Clear Search</button>
+                    <button id="studentClearSearchBtn" class="btn btn-text hidden">Clear Search</button>
                 </div>
+            </section>
 
-                <!-- Become Instructor Banner -->
-                <div class="become-tutor-banner" id="becomeInstructorBanner">
-                    <h2 class="text-gradient-blue-green">Share Your Knowledge</h2>
-                    <p>Join our community of expert instructors and help learners achieve their goals</p>
-                    <button class="btn btn-primary become-instructor-trigger" id="becomeInstructorBtn">Become an
-                        Instructor</button>
+            <!-- Categories -->
+            <section class="container section-spacing">
+                <h2 class="section-title">Explore Categories</h2>
+                <div id="categoriesGrid" class="grid-categories"></div>
+            </section>
+
+            <!-- Become Instructor Banner -->
+            <section class="container section-spacing">
+                <div class="banner">
+                    <h2>Share Your Knowledge</h2>
+                    <p>Join our community of expert instructors.</p>
+                    <button class="btn btn-white become-instructor-trigger">Get Started</button>
                 </div>
+            </section>
 
-                 <!-- Fetures Provding To User -->
-                <div class="why-section">
-                    <h2 class="section-title">Home-Service Emphasis 🏠</h2>
-                    <div class="features-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon">📚</div>
-                            <h3 class="feature-title">Academic Tutors</h3>
-                            <p class="feature-desc">Qualified | Tutors Personalized |Learning Home Convenience </p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🧘‍♀️</div>
-                            <h3 class="feature-title">Fitness & Wellness</h3>
-                            <p class="feature-desc">Certified Trainers | Customized Workout Plans | Mind & Body Balance </p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🎵</div>
-                            <h3 class="feature-title">Music Classes</h3>
-                            <p class="feature-desc">Professional Music Teachers | All Instruments & Vocals | Beginner to Advanced </p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">💃</div>
-                            <h3 class="feature-title">Dance Classes</h3>
-                            <p class="feature-desc">Trained Dance Instructors | Performance-Focused Training | Multiple Dance Styles </p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🎨</div>
-                            <h3 class="feature-title">Art & Creativity</h3>
-                            <p class="feature-desc">Creative Mentors | Hands-On Learning | Skill Enhancement </p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">💻</div>
-                            <h3 class="feature-title">Programming</h3>
-                            <p class="feature-desc">Industry Experts | Practical Coding | Career Ready Skills </p>
-                        </div>
-                    </div>
+            <!-- Instructors Grid -->
+            <section class="container section-spacing">
+                <h2 class="section-title">Featured Instructors</h2>
+                <div id="studentInstructorsGrid" class="grid-instructors">
+                    <!-- Loaded dynamically -->
                 </div>
+            </section>
+        </main>
 
-
-                <!-- Skills Categories -->
-                <div class="why-section">
-                    <h2 class="section-title">Browse by Category</h2>
-                    <div class="categories-grid" id="categoriesGrid"></div>
-                </div>
-
-                <!-- Why ApnaSkills Section -->
-                <div class="why-section">
-                    <h2 class="section-title">Why Choose ApnaSkills?</h2>
-                    <div class="features-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon">🎯</div>
-                            <h3 class="feature-title">Verified Instructors</h3>
-                            <p class="feature-desc">All our instructors are verified professionals with proven expertise
-                                and certifications</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">💰</div>
-                            <h3 class="feature-title">Flexible Pricing</h3>
-                            <p class="feature-desc">Choose instructors that fit your budget with transparent hourly
-                                rates</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">📅</div>
-                            <h3 class="feature-title">Easy Scheduling</h3>
-                            <p class="feature-desc">Book sessions at your convenience with our simple booking system</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">⭐</div>
-                            <h3 class="feature-title">Rated & Reviewed</h3>
-                            <p class="feature-desc">Make informed decisions with ratings and reviews from real students
-                            </p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🏠</div>
-                            <h3 class="feature-title">Learn From Home</h3>
-                            <p class="feature-desc">Connect with instructors online or schedule in-person sessions in
-                                your area</p>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🔒</div>
-                            <h3 class="feature-title">Secure & Private</h3>
-                            <p class="feature-desc">Your information is protected with enterprise-grade security</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Featured Instructors -->
-                <div class="tutors-section">
-                    <h2 class="section-title">Featured Instructors</h2>
-                    <div class="tutors-grid" id="studentInstructorsGrid"></div>
-                </div>
+        <!-- Page Content: BOOKINGS -->
+        <main id="studentBookingsPage" class="page-content hidden container section-spacing">
+            <h2 class="page-title">My Bookings</h2>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="current">Current</button>
+                <button class="tab-btn" data-tab="past">History</button>
             </div>
-        </div>
+            <div id="studentCurrentBookings" class="bookings-list"></div>
+            <div id="studentPastBookings" class="bookings-list hidden"></div>
+        </main>
 
-        <!-- Bookings Page -->
-        <div id="studentBookingsPage" class="page-content hidden">
-            <div class="page-section">
-                <div class="bookings-container">
-                    <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">My Bookings</h2>
-                    <div class="bookings-tabs">
-                        <button class="tab-btn active" data-tab="current">Current Bookings</button>
-                        <button class="tab-btn" data-tab="past">Past Bookings</button>
-                    </div>
-                    <div id="studentCurrentBookings"></div>
-                    <div id="studentPastBookings" class="hidden"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Notifications Page -->
-        <div id="studentNotificationsPage" class="page-content hidden">
-            <div class="page-section">
-                <div class="bookings-container">
-                    <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">Notifications</h2>
-                    <div id="studentNotificationsList"></div>
-                </div>
-            </div>
-        </div>
+        <!-- Page Content: NOTIFICATIONS -->
+        <main id="studentNotificationsPage" class="page-content hidden container section-spacing">
+            <h2 class="page-title">Notifications</h2>
+            <div id="studentNotificationsList" class="notifications-list"></div>
+        </main>
     </div>
 
     <!-- ==================== INSTRUCTOR APP ==================== -->
-    <div id="instructorApp" class="hidden">
-        <!-- Header -->
-        <header>
-            <nav>
+    <div id="instructorApp" class="app-container hidden">
+        <header class="app-header">
+            <div class="nav-container">
                 <div class="nav-brand">
-                    <span class="brand-apna">Apna</span><span class="brand-skills">Skills</span> - Instructor
+                    <span class="text-brand-green">Apna</span><span class="text-brand-blue">Skills</span>
+                    <span class="badge-instructor">Instructor</span>
                 </div>
-                <div class="menu-container">
-                    <button class="icon-btn" id="instructorNotificationTrigger">
-                        🔔
-                        <span id="instructorNotificationBadge" class="notification-badge-icon hidden">0</span>
+
+                <div class="nav-actions">
+                    <div class="notification-wrapper">
+                        <button id="instructorNotificationTrigger" class="icon-btn">🔔</button>
+                        <span id="instructorNotificationBadge" class="badge hidden">0</span>
+                    </div>
+
+                    <button id="instructorMenuBtn" class="hamburger-btn">
+                        <span></span><span></span><span></span>
                     </button>
 
-                    <button class="hamburger-btn" id="instructorMenuBtn">
-                        <span class="bar"></span>
-                        <span class="bar"></span>
-                        <span class="bar"></span>
-                    </button>
-
-                    <div class="dropdown-menu" id="instructorDropdown">
-                        <div class="menu-header">
-                            <img id="instructorUserAvatarMenu" class="menu-user-avatar" src="" alt="User">
+                    <div id="instructorDropdown" class="dropdown-menu">
+                        <div class="menu-user-info">
+                            <img id="instructorUserAvatarMenu" src="" alt="User" class="avatar-small">
                             <div>
-                                <span class="menu-user-name" id="instructorUserNameMenu">Instructor</span>
-                                <span class="menu-user-role">👨‍🏫 Instructor</span>
+                                <span id="instructorUserNameMenu" class="user-name">Instructor</span>
+                                <span class="user-role">👨‍🏫 Instructor</span>
                             </div>
                         </div>
-                        <button class="menu-item" id="switchToHomeBtn">🏠 Home</button>
-                        <button class="menu-item nav-link" data-page="instructor-home">📊 Dashboard</button>
-                        <button class="menu-item nav-link" data-page="instructor-bookings">📅 My Bookings</button>
-                        <button class="menu-item nav-link" data-page="instructor-profile">👤 My Profile</button>
-                        <button class="menu-item nav-link" data-page="instructor-notifications">🔔
-                            Notifications</button>
-                        <div class="menu-divider"></div>
-                        <button class="menu-item danger" id="instructorLogoutBtn">🚪 Logout</button>
+                        <nav class="menu-links">
+                            <a href="#" class="menu-item active" data-page="instructor-home">📊 Dashboard</a>
+                            <a href="#" class="menu-item" data-page="instructor-bookings">📅 Bookings</a>
+                            <a href="#" class="menu-item" data-page="instructor-profile">👤 Profile</a>
+                            <a href="#" class="menu-item" data-page="instructor-notifications">🔔 Notifications</a>
+                            <a href="#" class="menu-item" id="switchToStudentBtn">🏠 Switch to Student View</a>
+                            <div class="divider"></div>
+                            <a href="#" class="menu-item danger" id="instructorLogoutBtn">🚪 Logout</a>
+                        </nav>
                     </div>
                 </div>
-            </nav>
+            </div>
         </header>
 
         <!-- Instructor Dashboard -->
-        <div id="instructorHomePage" class="page-content">
-            <div class="page-section">
-                <div class="bookings-container">
-                    <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">Instructor Dashboard</h2>
-                    <div id="instructorDashboard"></div>
-                </div>
+        <main id="instructorHomePage" class="page-content container section-spacing">
+            <h2 class="page-title">Dashboard Overview</h2>
+            <div id="instructorDashboard" class="dashboard-grid">
+                <!-- Stats and quick actions -->
             </div>
-        </div>
+        </main>
 
         <!-- Instructor Bookings -->
-        <div id="instructorBookingsPage" class="page-content hidden">
-            <div class="page-section">
-                <div class="bookings-container">
-                    <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">My Bookings</h2>
-                    <div class="bookings-tabs">
-                        <button class="tab-btn active" data-tab="current">Current Bookings</button>
-                        <button class="tab-btn" data-tab="past">Past Bookings</button>
-                    </div>
-                    <div id="instructorCurrentBookings"></div>
-                    <div id="instructorPastBookings" class="hidden"></div>
-                </div>
+        <main id="instructorBookingsPage" class="page-content hidden container section-spacing">
+            <h2 class="page-title">Manage Bookings</h2>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="current">Upcoming</button>
+                <button class="tab-btn" data-tab="past">Completed</button>
             </div>
-        </div>
+            <div id="instructorCurrentBookings" class="bookings-list"></div>
+            <div id="instructorPastBookings" class="bookings-list hidden"></div>
+        </main>
 
         <!-- Instructor Profile -->
-        <div id="instructorProfilePage" class="page-content hidden">
-            <div class="page-section">
-                <div class="bookings-container">
-                    <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">My Profile</h2>
-                    <div id="instructorProfileContent"></div>
-                </div>
-            </div>
-        </div>
+        <main id="instructorProfilePage" class="page-content hidden container section-spacing">
+            <h2 class="page-title">My Profile</h2>
+            <div id="instructorProfileContent" class="profile-container"></div>
+        </main>
 
         <!-- Instructor Notifications -->
-        <div id="instructorNotificationsPage" class="page-content hidden">
-            <div class="page-section">
-                <div class="bookings-container">
-                    <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">Notifications</h2>
-                    <div id="instructorNotificationsList"></div>
-                </div>
-            </div>
-        </div>
+        <main id="instructorNotificationsPage" class="page-content hidden container section-spacing">
+            <h2 class="page-title">Notifications</h2>
+            <div id="instructorNotificationsList" class="notifications-list"></div>
+        </main>
     </div>
 
-    <!-- Load JavaScript -->
+    <!-- Scripts -->
     <script type="module" src="app.js"></script>
 </body>
 
 </html>
-
-
-
-
-
-
-
