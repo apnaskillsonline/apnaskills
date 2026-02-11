@@ -1,5 +1,6 @@
 // ==================== FIREBASE INITIALIZATION ====================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
 
 // Firefly Animation
 function createFireflies() {
@@ -33,20 +34,22 @@ function createFireflies() {
 // Call on load
 window.addEventListener('load', createFireflies);
 
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-import { getDatabase, ref, set, get, push, update, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { getDatabase, ref, set, get, push, update, onValue } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBj8NFx3wd1PFXR37X4JcE9j4N9pJGnZ8A",
-    authDomain: "apnaskills-ef242.firebaseapp.com",
-    databaseURL: "https://apnaskills-ef242-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "apnaskills-ef242",
-    storageBucket: "apnaskills-ef242.firebasestorage.app",
-    messagingSenderId: "120699280754",
-    appId: "1:120699280754:web:1aff20056bf990f67c11eb"
+    apiKey: "AIzaSyBnGKcjP9kXe7dFhgD-SZRVYZGT5pTB-_c",
+    authDomain: "apnaskills-483e2.firebaseapp.com",
+    databaseURL: "https://apnaskills-483e2-default-rtdb.firebaseio.com",
+    projectId: "apnaskills-483e2",
+    storageBucket: "apnaskills-483e2.firebasestorage.app",
+    messagingSenderId: "956454333482",
+    appId: "1:956454333482:web:e2071d6721576ca10da753",
+    measurementId: "G-XYHN0EZ9TF"
 };
 
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const database = getDatabase(app);
 const provider = new GoogleAuthProvider();
@@ -111,54 +114,54 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('studentApp').classList.remove('hidden');
             document.getElementById('studentUserNameMenu').textContent = user.displayName;
             document.getElementById('studentUserAvatarMenu').src = user.photoURL;
-            
+
             // Load student features so instructor can see home page
             await loadInstructors();
             await loadCategories();
             await loadStudentNotifications();
             setupStudentNotificationListener();
-            
+
             // Also add "Switch to Dashboard" button in menu
-           function addDashboardSwitchButton() {
-    const becomeInstructorBtn = document.querySelector('#studentDropdown .become-instructor-trigger');
-    const profileBtn = document.getElementById('studentMenuProfileBtn');
-    
-    if (becomeInstructorBtn && currentUserData.isInstructor) {
-        // Replace "Become Instructor" with "Go to Dashboard"
-        becomeInstructorBtn.innerHTML = '📊 Dashboard';
-        becomeInstructorBtn.classList.remove('become-instructor-trigger');
-        
-        // Show profile button for instructors
-        if (profileBtn) {
-            profileBtn.style.display = 'block';
-            profileBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                // Switch to instructor app and show profile
-                document.getElementById('studentApp').classList.add('hidden');
-                document.getElementById('instructorApp').classList.remove('hidden');
-                document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
-                document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
-                
-                // Show profile page
-                document.querySelectorAll('#instructorApp .page-content').forEach(p => p.classList.add('hidden'));
-                document.getElementById('instructorProfilePage').classList.remove('hidden');
-                await loadInstructorProfile();
-            });
-        }
-        
-        // Add click handler to switch to instructor app
-        becomeInstructorBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            document.getElementById('studentApp').classList.add('hidden');
-            document.getElementById('instructorApp').classList.remove('hidden');
-            document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
-            document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
-            await loadInstructorDashboard();
-            await loadInstructorNotifications();
-            setupInstructorNotificationListener();
-        });
-    }
-}
+            function addDashboardSwitchButton() {
+                const becomeInstructorBtn = document.querySelector('#studentDropdown .become-instructor-trigger');
+                const profileBtn = document.getElementById('studentMenuProfileBtn');
+
+                if (becomeInstructorBtn && currentUserData.isInstructor) {
+                    // Replace "Become Instructor" with "Go to Dashboard"
+                    becomeInstructorBtn.innerHTML = '📊 Dashboard';
+                    becomeInstructorBtn.classList.remove('become-instructor-trigger');
+
+                    // Show profile button for instructors
+                    if (profileBtn) {
+                        profileBtn.style.display = 'block';
+                        profileBtn.addEventListener('click', async (e) => {
+                            e.preventDefault();
+                            // Switch to instructor app and show profile
+                            document.getElementById('studentApp').classList.add('hidden');
+                            document.getElementById('instructorApp').classList.remove('hidden');
+                            document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
+                            document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
+
+                            // Show profile page
+                            document.querySelectorAll('#instructorApp .page-content').forEach(p => p.classList.add('hidden'));
+                            document.getElementById('instructorProfilePage').classList.remove('hidden');
+                            await loadInstructorProfile();
+                        });
+                    }
+
+                    // Add click handler to switch to instructor app
+                    becomeInstructorBtn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        document.getElementById('studentApp').classList.add('hidden');
+                        document.getElementById('instructorApp').classList.remove('hidden');
+                        document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
+                        document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
+                        await loadInstructorDashboard();
+                        await loadInstructorNotifications();
+                        setupInstructorNotificationListener();
+                    });
+                }
+            }
         }
 
         setTimeout(() => checkPendingRatings(), 2000);
@@ -1680,24 +1683,24 @@ document.addEventListener('click', (e) => {
 function addDashboardSwitchButton() {
     // Find the "Become Instructor" button and replace it with "Dashboard" button
     const becomeInstructorBtn = document.querySelector('#studentDropdown .become-instructor-trigger');
-    
+
     if (becomeInstructorBtn && currentUserData.isInstructor) {
         // Replace "Become Instructor" with "Go to Dashboard"
         becomeInstructorBtn.innerHTML = '📊 Dashboard';
         becomeInstructorBtn.classList.remove('become-instructor-trigger');
-        
+
         // Add click handler to switch to instructor app
         becomeInstructorBtn.addEventListener('click', async (e) => {
             e.preventDefault();
-            
+
             // Hide student app
             document.getElementById('studentApp').classList.add('hidden');
-            
+
             // Show instructor app
             document.getElementById('instructorApp').classList.remove('hidden');
             document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
             document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
-            
+
             // Load instructor features
             await loadInstructorDashboard();
             await loadInstructorNotifications();
@@ -1714,23 +1717,22 @@ document.addEventListener('DOMContentLoaded', () => {
         switchToHomeBtn.addEventListener('click', async () => {
             // Hide instructor app
             document.getElementById('instructorApp').classList.add('hidden');
-            
+
             // Show student app (home page)
             document.getElementById('studentApp').classList.remove('hidden');
             document.getElementById('studentUserNameMenu').textContent = currentUser.displayName;
             document.getElementById('studentUserAvatarMenu').src = currentUser.photoURL;
-            
+
             // Reload home page content
             await loadInstructors();
             await loadCategories();
-            
+
             // Show home page
             document.querySelectorAll('#studentApp .page-content').forEach(p => p.classList.add('hidden'));
             document.getElementById('studentHomePage').classList.remove('hidden');
         });
     }
 });
-
 
 
 
