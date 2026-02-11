@@ -166,49 +166,125 @@ async function loadStudentApp() {
             console.log("Setting up click for:", btn);
             btn.onclick = (e) => {
                 e.preventDefault();
-                alert("To become an instructor, please contact support or wait for the registration feature.");
+                // Registration Modal
+                const modalHtml = `
+                   <div id="instructorModal" class="modal-overlay">
+                       <div class="modal-content">
+                           <div class="modal-header">
+                               <h3>Become an Instructor</h3>
+                               <button onclick="document.getElementById('instructorModal').remove()">✕</button>
+                           </div>
+                           <div class="modal-body">
+                               <form id="instructorForm">
+                                   <div class="input-group" style="margin-bottom:12px;">
+                                        <label>Specialization</label>
+                                        <input type="text" id="regSpec" required placeholder="e.g. Mathematics, Guitar, Yoga">
+                                   </div>
+                                   <div class="input-group" style="margin-bottom:12px;">
+                                        <label>Experience (Years)</label>
+                                        <input type="number" id="regExp" required min="0">
+                                   </div>
+                                   <div class="input-group" style="margin-bottom:12px;">
+                                        <label>Hourly Rate (₹)</label>
+                                        <input type="number" id="regRate" required min="0">
+                                   </div>
+                                   <div class="input-group" style="margin-bottom:12px;">
+                                        <label>Location</label>
+                                        <input type="text" id="regLoc" required placeholder="City, Area">
+                                   </div>
+                               </form>
+                           </div>
+                           <div class="modal-footer">
+                               <button class="btn" onclick="document.getElementById('instructorModal').remove()">Cancel</button>
+                               <button class="btn btn-primary" onclick="submitInstructorRegistration()">Register</button>
+                           </div>
+                       </div>
+                   </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
             };
         }
     });
 
-    // Load Data
-    await loadInstructors();
-    await loadCategories();
-    setupNotifications('student');
-    initializeSearch();
-}
+    window.submitInstructorRegistration = async () => {
+        const spec = document.getElementById('regSpec').value;
+        const exp = document.getElementById('regExp').value;
+        const rate = document.getElementById('regRate').value;
+        const loc = document.getElementById('regLoc').value;
 
-// Data Fetching: Instructors
-async function loadInstructors() {
-    const dbRef = ref(database, 'instructors');
-    const snapshot = await get(dbRef);
-    const grid = document.getElementById('studentInstructorsGrid');
+        if (!spec || !exp || !rate || !loc) {
+            alert("Please fill all fields");
+            return;
+        }
 
-    state.instructors = [];
-    grid.innerHTML = '<p class="loading-text">Loading instructors...</p>';
+        try {
+            // Update User Profile
+            await update(ref(database, `users/${state.user.uid}`), {
+                isInstructor: true
+            });
 
-    if (snapshot.exists()) {
-        snapshot.forEach(child => {
-            const inst = child.val();
-            inst.id = child.key;
-            // Filter out self
-            if (inst.userId !== state.user.uid) {
-                state.instructors.push(inst);
-            }
-        });
+            // Create Instructor Entry
+            await set(ref(database, `instructors/${state.user.uid}`), {
+                userId: state.user.uid,
+                name: state.user.displayName,
+                photoURL: state.user.photoURL,
+                email: state.user.email,
+                specialization: spec,
+                experience: exp,
+                hourlyRate: rate,
+                location: loc,
+                rating: 5.0,
+                ratingCount: 0
+            });
+
+            alert("Congratulations! You are now an Instructor.");
+            document.getElementById('instructorModal').remove();
+
+            // Reload to refresh state
+            window.location.reload();
+
+        } catch (error) {
+            console.error("Registration failed:", error);
+            alert("Registration failed. Please try again.");
+        }
+        // Load Data
+        await loadInstructors();
+        await loadCategories();
+        setupNotifications('student');
+        initializeSearch();
     }
 
-    renderInstructors(state.instructors);
-}
+    // Data Fetching: Instructors
+    async function loadInstructors() {
+        const dbRef = ref(database, 'instructors');
+        const snapshot = await get(dbRef);
+        const grid = document.getElementById('studentInstructorsGrid');
 
-function renderInstructors(list) {
-    const grid = document.getElementById('studentInstructorsGrid');
-    if (list.length === 0) {
-        grid.innerHTML = '<div class="empty-state">No instructors found.</div>';
-        return;
+        state.instructors = [];
+        grid.innerHTML = '<p class="loading-text">Loading instructors...</p>';
+
+        if (snapshot.exists()) {
+            snapshot.forEach(child => {
+                const inst = child.val();
+                inst.id = child.key;
+                // Filter out self
+                if (inst.userId !== state.user.uid) {
+                    state.instructors.push(inst);
+                }
+            });
+        }
+
+        renderInstructors(state.instructors);
     }
 
-    grid.innerHTML = list.map(inst => `
+    function renderInstructors(list) {
+        const grid = document.getElementById('studentInstructorsGrid');
+        if (list.length === 0) {
+            grid.innerHTML = '<div class="empty-state">No instructors found.</div>';
+            return;
+        }
+
+        grid.innerHTML = list.map(inst => `
         <div class="instructor-card">
             <div class="card-header">
                 <img src="${inst.photoURL || 'https://via.placeholder.com/60'}" class="instructor-avatar" alt="${inst.name}">
@@ -228,121 +304,121 @@ function renderInstructors(list) {
             </div>
         </div>
     `).join('');
-}
+    }
 
-// Data Fetching: Categories
-async function loadCategories() {
-    // Derived from instructors for now
-    const counts = {};
-    state.instructors.forEach(inst => {
-        counts[inst.specialization] = (counts[inst.specialization] || 0) + 1;
-    });
+    // Data Fetching: Categories
+    async function loadCategories() {
+        // Derived from instructors for now
+        const counts = {};
+        state.instructors.forEach(inst => {
+            counts[inst.specialization] = (counts[inst.specialization] || 0) + 1;
+        });
 
-    const grid = document.getElementById('categoriesGrid');
-    grid.innerHTML = Object.keys(counts).map(cat => `
+        const grid = document.getElementById('categoriesGrid');
+        grid.innerHTML = Object.keys(counts).map(cat => `
         <div class="card" style="text-align: center; cursor: pointer;" onclick="window.filterByCat('${cat}')">
             <h3>${cat}</h3>
             <p>${counts[cat]} Instructor(s)</p>
         </div>
     `).join('');
-}
+    }
 
-// Search Logic
-function initializeSearch() {
-    const form = document.getElementById('studentSearchForm');
+    // Search Logic
+    function initializeSearch() {
+        const form = document.getElementById('studentSearchForm');
 
-    // Debounce Dropdowns
-    setupDropdown('studentLocationInput', 'studentLocationSuggestions', CITIES, 'RefineLocation');
-    setupDropdown('studentSpecializationInput', 'studentSpecializationSuggestions', SPECIALIZATIONS, 'RefineSpec');
+        // Debounce Dropdowns
+        setupDropdown('studentLocationInput', 'studentLocationSuggestions', CITIES, 'RefineLocation');
+        setupDropdown('studentSpecializationInput', 'studentSpecializationSuggestions', SPECIALIZATIONS, 'RefineSpec');
 
-    form.onsubmit = (e) => {
-        e.preventDefault();
-        const loc = document.getElementById('studentLocationInput').value.toLowerCase();
-        const spec = document.getElementById('studentSpecializationInput').value.toLowerCase();
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            const loc = document.getElementById('studentLocationInput').value.toLowerCase();
+            const spec = document.getElementById('studentSpecializationInput').value.toLowerCase();
 
-        const filtered = state.instructors.filter(inst => {
-            const matchesLoc = !loc || inst.location.toLowerCase().includes(loc) || (inst.landmark && inst.landmark.toLowerCase().includes(loc));
-            const matchesSpec = !spec || inst.specialization.toLowerCase().includes(spec);
-            return matchesLoc && matchesSpec;
+            const filtered = state.instructors.filter(inst => {
+                const matchesLoc = !loc || inst.location.toLowerCase().includes(loc) || (inst.landmark && inst.landmark.toLowerCase().includes(loc));
+                const matchesSpec = !spec || inst.specialization.toLowerCase().includes(spec);
+                return matchesLoc && matchesSpec;
+            });
+
+            renderInstructors(filtered);
+            document.getElementById('studentClearSearchBtn').classList.remove('hidden');
+        };
+
+        document.getElementById('studentClearSearchBtn').onclick = () => {
+            document.getElementById('studentLocationInput').value = '';
+            document.getElementById('studentSpecializationInput').value = '';
+            renderInstructors(state.instructors);
+            document.getElementById('studentClearSearchBtn').classList.add('hidden');
+        };
+    }
+
+    function setupDropdown(inputId, listId, dataArray, type) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
+
+        input.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            if (!val) {
+                list.classList.add('hidden');
+                return;
+            }
+
+            const matches = dataArray.filter(item => item.toLowerCase().includes(val));
+            list.innerHTML = matches.map(item => `<div class="suggestion-item">${item}</div>`).join('');
+
+            if (matches.length > 0) list.classList.remove('hidden');
+            else list.classList.add('hidden');
         });
 
-        renderInstructors(filtered);
-        document.getElementById('studentClearSearchBtn').classList.remove('hidden');
+        list.addEventListener('click', (e) => {
+            if (e.target.classList.contains('suggestion-item')) {
+                input.value = e.target.textContent;
+                list.classList.add('hidden');
+            }
+        });
+
+        // Hide on click outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest(`#${inputId}`) && !e.target.closest(`#${listId}`)) {
+                list.classList.add('hidden');
+            }
+        });
+    }
+
+    window.filterByCat = (cat) => {
+        document.getElementById('studentSpecializationInput').value = cat;
+        document.getElementById('studentSearchForm').dispatchEvent(new Event('submit'));
     };
 
-    document.getElementById('studentClearSearchBtn').onclick = () => {
-        document.getElementById('studentLocationInput').value = '';
-        document.getElementById('studentSpecializationInput').value = '';
-        renderInstructors(state.instructors);
-        document.getElementById('studentClearSearchBtn').classList.add('hidden');
-    };
-}
+    // ==================== INSTRUCTOR APP LOGIC ====================
 
-function setupDropdown(inputId, listId, dataArray, type) {
-    const input = document.getElementById(inputId);
-    const list = document.getElementById(listId);
+    async function loadInstructorApp() {
+        state.isInstructorMode = true;
+        localStorage.setItem('lastView', 'instructor');
 
-    input.addEventListener('input', (e) => {
-        const val = e.target.value.toLowerCase();
-        if (!val) {
-            list.classList.add('hidden');
-            return;
-        }
+        document.getElementById('studentApp').classList.add('hidden');
+        document.getElementById('instructorApp').classList.remove('hidden');
 
-        const matches = dataArray.filter(item => item.toLowerCase().includes(val));
-        list.innerHTML = matches.map(item => `<div class="suggestion-item">${item}</div>`).join('');
+        document.getElementById('instructorUserNameMenu').textContent = state.user.displayName;
+        document.getElementById('instructorUserAvatarMenu').src = state.user.photoURL;
 
-        if (matches.length > 0) list.classList.remove('hidden');
-        else list.classList.add('hidden');
-    });
+        // Load Dashboard Stats
+        loadInstructorDashboard();
+        setupNotifications('instructor');
 
-    list.addEventListener('click', (e) => {
-        if (e.target.classList.contains('suggestion-item')) {
-            input.value = e.target.textContent;
-            list.classList.add('hidden');
-        }
-    });
+        document.getElementById('switchToStudentBtn').onclick = (e) => {
+            e.preventDefault();
+            loadStudentApp();
+        };
+    }
 
-    // Hide on click outside
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest(`#${inputId}`) && !e.target.closest(`#${listId}`)) {
-            list.classList.add('hidden');
-        }
-    });
-}
-
-window.filterByCat = (cat) => {
-    document.getElementById('studentSpecializationInput').value = cat;
-    document.getElementById('studentSearchForm').dispatchEvent(new Event('submit'));
-};
-
-// ==================== INSTRUCTOR APP LOGIC ====================
-
-async function loadInstructorApp() {
-    state.isInstructorMode = true;
-    localStorage.setItem('lastView', 'instructor');
-
-    document.getElementById('studentApp').classList.add('hidden');
-    document.getElementById('instructorApp').classList.remove('hidden');
-
-    document.getElementById('instructorUserNameMenu').textContent = state.user.displayName;
-    document.getElementById('instructorUserAvatarMenu').src = state.user.photoURL;
-
-    // Load Dashboard Stats
-    loadInstructorDashboard();
-    setupNotifications('instructor');
-
-    document.getElementById('switchToStudentBtn').onclick = (e) => {
-        e.preventDefault();
-        loadStudentApp();
-    };
-}
-
-async function loadInstructorDashboard() {
-    const dashboard = document.getElementById('instructorDashboard');
-    // Fetch bookings for this instructor
-    // For demo purposes, simplified:
-    dashboard.innerHTML = `
+    async function loadInstructorDashboard() {
+        const dashboard = document.getElementById('instructorDashboard');
+        // Fetch bookings for this instructor
+        // For demo purposes, simplified:
+        dashboard.innerHTML = `
         <div class="card">
             <h3>Total Bookings</h3>
             <p class="text-brand-blue" style="font-size: 2rem; font-weight: 800;">0</p>
@@ -356,15 +432,15 @@ async function loadInstructorDashboard() {
             <p class="text-brand-green" style="font-size: 2rem; font-weight: 800;">0</p>
         </div>
     `;
-}
+    }
 
-// ==================== BOOKING SYSTEM ====================
+    // ==================== BOOKING SYSTEM ====================
 
-window.openBooking = (instructorId) => {
-    const instructor = state.instructors.find(i => i.id === instructorId);
-    if (!instructor) return;
+    window.openBooking = (instructorId) => {
+        const instructor = state.instructors.find(i => i.id === instructorId);
+        if (!instructor) return;
 
-    const modalHtml = `
+        const modalHtml = `
     <div id="bookingModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -391,129 +467,130 @@ window.openBooking = (instructorId) => {
         </div>
     </div>
     `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-};
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    };
 
-window.confirmBooking = async (instructorId) => {
-    const date = document.getElementById('bookDate').value;
-    const topic = document.getElementById('bookTopic').value;
+    window.confirmBooking = async (instructorId) => {
+        const date = document.getElementById('bookDate').value;
+        const topic = document.getElementById('bookTopic').value;
 
-    if (!date || !topic) {
-        alert("Please fill all fields");
-        return;
+        if (!date || !topic) {
+            alert("Please fill all fields");
+            return;
+        }
+
+        try {
+            const bookingsRef = ref(database, 'bookings');
+            const newBooking = push(bookingsRef);
+            await set(newBooking, {
+                studentId: state.user.uid,
+                instructorId: instructorId,
+                date: date,
+                topic: topic,
+                status: 'pending',
+                timestamp: Date.now()
+            });
+
+            alert("Booking request sent!");
+            document.getElementById('bookingModal').remove();
+        } catch (err) {
+            console.error(err);
+            alert("Booking failed");
+        }
+    };
+
+    // ==================== NAVIGATION & TABS ====================
+
+    function setupNavigation(appId) {
+        const links = document.querySelectorAll(`#${appId} .menu-link, #${appId} .menu-item`);
+        links.forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (link.id.includes('Logout') || link.id.includes('Switch') || link.id === 'becomeInstructorBtn') return;
+
+                e.preventDefault();
+                const pageId = link.dataset.page;
+
+                // Hide all pages in this app
+                document.querySelectorAll(`#${appId} .page-content`).forEach(p => p.classList.add('hidden'));
+
+                if (pageId === 'home') document.getElementById('studentHomePage').classList.remove('hidden');
+                if (pageId === 'bookings') {
+                    document.getElementById('studentBookingsPage').classList.remove('hidden');
+                    loadBookings('student');
+                }
+                if (pageId === 'notifications') document.getElementById('studentNotificationsPage').classList.remove('hidden');
+
+                // Instructor Pages
+                if (pageId === 'instructor-home') document.getElementById('instructorHomePage').classList.remove('hidden');
+                if (pageId === 'instructor-bookings') {
+                    document.getElementById('instructorBookingsPage').classList.remove('hidden');
+                    loadBookings('instructor');
+                }
+                if (pageId === 'instructor-profile') document.getElementById('instructorProfilePage').classList.remove('hidden');
+                if (pageId === 'instructor-notifications') document.getElementById('instructorNotificationsPage').classList.remove('hidden');
+            });
+        });
     }
 
-    try {
-        const bookingsRef = ref(database, 'bookings');
-        const newBooking = push(bookingsRef);
-        await set(newBooking, {
-            studentId: state.user.uid,
-            instructorId: instructorId,
-            date: date,
-            topic: topic,
-            status: 'pending',
-            timestamp: Date.now()
-        });
+    setupNavigation('studentApp');
+    setupNavigation('instructorApp');
 
-        alert("Booking request sent!");
-        document.getElementById('bookingModal').remove();
-    } catch (err) {
-        console.error(err);
-        alert("Booking failed");
-    }
-};
+    // Menu Toggles
+    const toggles = [
+        { btn: 'studentMenuBtn', menu: 'studentDropdown' },
+        { btn: 'instructorMenuBtn', menu: 'instructorDropdown' }
+    ];
 
-// ==================== NAVIGATION & TABS ====================
-
-function setupNavigation(appId) {
-    const links = document.querySelectorAll(`#${appId} .menu-link, #${appId} .menu-item`);
-    links.forEach(link => {
-        link.addEventListener('click', (e) => {
-            if (link.id.includes('Logout') || link.id.includes('Switch') || link.id === 'becomeInstructorBtn') return;
-
-            e.preventDefault();
-            const pageId = link.dataset.page;
-
-            // Hide all pages in this app
-            document.querySelectorAll(`#${appId} .page-content`).forEach(p => p.classList.add('hidden'));
-
-            if (pageId === 'home') document.getElementById('studentHomePage').classList.remove('hidden');
-            if (pageId === 'bookings') {
-                document.getElementById('studentBookingsPage').classList.remove('hidden');
-                loadBookings('student');
-            }
-            if (pageId === 'notifications') document.getElementById('studentNotificationsPage').classList.remove('hidden');
-
-            // Instructor Pages
-            if (pageId === 'instructor-home') document.getElementById('instructorHomePage').classList.remove('hidden');
-            if (pageId === 'instructor-bookings') {
-                document.getElementById('instructorBookingsPage').classList.remove('hidden');
-                loadBookings('instructor');
-            }
-            if (pageId === 'instructor-profile') document.getElementById('instructorProfilePage').classList.remove('hidden');
-            if (pageId === 'instructor-notifications') document.getElementById('instructorNotificationsPage').classList.remove('hidden');
-        });
+    toggles.forEach(({ btn, menu }) => {
+        const b = document.getElementById(btn);
+        const m = document.getElementById(menu);
+        if (b && m) {
+            b.onclick = (e) => {
+                e.stopPropagation();
+                m.classList.toggle('active');
+            };
+        }
     });
-}
 
-setupNavigation('studentApp');
-setupNavigation('instructorApp');
-
-// Menu Toggles
-const toggles = [
-    { btn: 'studentMenuBtn', menu: 'studentDropdown' },
-    { btn: 'instructorMenuBtn', menu: 'instructorDropdown' }
-];
-
-toggles.forEach(({ btn, menu }) => {
-    const b = document.getElementById(btn);
-    const m = document.getElementById(menu);
-    if (b && m) {
-        b.onclick = (e) => {
-            e.stopPropagation();
-            m.classList.toggle('active');
-        };
-    }
-});
-
-document.body.onclick = () => {
-    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
-};
+    document.body.onclick = () => {
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+    };
 
 
-// ==================== NOTIFICATIONS ====================
-function setupNotifications(role) {
-    const refPath = `notifications/${state.user.uid}`;
-    const badgeId = `${role}NotificationBadge`;
-    const listId = `${role}NotificationsList`;
+    // ==================== NOTIFICATIONS ====================
+    function setupNotifications(role) {
+        const refPath = `notifications/${state.user.uid}`;
+        const badgeId = `${role}NotificationBadge`;
+        const listId = `${role}NotificationsList`;
 
-    onValue(ref(database, refPath), (snapshot) => {
-        const data = snapshot.val();
-        const list = document.getElementById(listId);
-        const badge = document.getElementById(badgeId);
+        onValue(ref(database, refPath), (snapshot) => {
+            const data = snapshot.val();
+            const list = document.getElementById(listId);
+            const badge = document.getElementById(badgeId);
 
-        if (data) {
-            const notifs = Object.values(data).reverse(); // Newest first
-            const unreadCount = notifs.filter(n => !n.read).length;
+            if (data) {
+                const notifs = Object.values(data).reverse(); // Newest first
+                const unreadCount = notifs.filter(n => !n.read).length;
 
-            badge.textContent = unreadCount;
-            if (unreadCount > 0) badge.classList.remove('hidden');
-            else badge.classList.add('hidden');
+                badge.textContent = unreadCount;
+                if (unreadCount > 0) badge.classList.remove('hidden');
+                else badge.classList.add('hidden');
 
-            list.innerHTML = notifs.map(n => `
+                list.innerHTML = notifs.map(n => `
                 <div class="card" style="margin-bottom: 10px; border-left: 4px solid var(--brand-blue);">
                     <p>${n.message}</p>
                     <small style="color:var(--text-light)">${new Date(n.timestamp).toLocaleDateString()}</small>
                 </div>
             `).join('');
-        } else {
-            list.innerHTML = '<p>No notifications.</p>';
-        }
-    });
-}
+            } else {
+                list.innerHTML = '<p>No notifications.</p>';
+            }
+        });
+    }
 
-async function loadBookings(role) {
-    // Placeholder for booking loading logic
-    const listId = `${role}CurrentBookings`;
-    document.getElementById(listId).innerHTML = '<p>No active bookings.</p>';
+    async function loadBookings(role) {
+        // Placeholder for booking loading logic
+        const listId = `${role}CurrentBookings`;
+        document.getElementById(listId).innerHTML = '<p>No active bookings.</p>';
+    }
 }
