@@ -104,67 +104,56 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
         const userRef = ref(database, `users/${user.uid}`);
-        const snapshot = await get(userRef);
-        currentUserData = snapshot.val();
 
-        document.getElementById('loginPage').classList.add('hidden');
+        try {
+            let snapshot = await get(userRef);
 
-        if (currentUserData.isInstructor) {
-            // ✅ SOLUTION: Show student app (home page) instead of instructor app
-            document.getElementById('studentApp').classList.remove('hidden');
-            document.getElementById('studentUserNameMenu').textContent = user.displayName;
-            document.getElementById('studentUserAvatarMenu').src = user.photoURL;
+            if (!snapshot.exists()) {
+                await set(userRef, {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL,
+                    isInstructor: false,
+                    createdAt: Date.now()
+                });
+                snapshot = await get(userRef);
+            }
 
-            // Load student features so instructor can see home page
-            await loadInstructors();
-            await loadCategories();
-            await loadStudentNotifications();
-            setupStudentNotificationListener();
+            currentUserData = snapshot.val();
 
-            // Also add "Switch to Dashboard" button in menu
-            function addDashboardSwitchButton() {
-                const becomeInstructorBtn = document.querySelector('#studentDropdown .become-instructor-trigger');
-                const profileBtn = document.getElementById('studentMenuProfileBtn');
+            if (currentUserData) {
+                document.getElementById('loginPage').classList.add('hidden');
 
-                if (becomeInstructorBtn && currentUserData.isInstructor) {
-                    // Replace "Become Instructor" with "Go to Dashboard"
-                    becomeInstructorBtn.innerHTML = '📊 Dashboard';
-                    becomeInstructorBtn.classList.remove('become-instructor-trigger');
+                if (currentUserData.isInstructor) {
+                    // ✅ SOLUTION: Show student app (home page) instead of instructor app
+                    document.getElementById('studentApp').classList.remove('hidden');
+                    document.getElementById('studentUserNameMenu').textContent = user.displayName;
+                    document.getElementById('studentUserAvatarMenu').src = user.photoURL;
 
-                    // Show profile button for instructors
-                    if (profileBtn) {
-                        profileBtn.style.display = 'block';
-                        profileBtn.addEventListener('click', async (e) => {
-                            e.preventDefault();
-                            // Switch to instructor app and show profile
-                            document.getElementById('studentApp').classList.add('hidden');
-                            document.getElementById('instructorApp').classList.remove('hidden');
-                            document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
-                            document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
+                    // Load student features so instructor can see home page
+                    await loadInstructors();
+                    await loadCategories();
+                    await loadStudentNotifications();
+                    setupStudentNotificationListener();
 
-                            // Show profile page
-                            document.querySelectorAll('#instructorApp .page-content').forEach(p => p.classList.add('hidden'));
-                            document.getElementById('instructorProfilePage').classList.remove('hidden');
-                            await loadInstructorProfile();
-                        });
-                    }
 
-                    // Add click handler to switch to instructor app
-                    becomeInstructorBtn.addEventListener('click', async (e) => {
-                        e.preventDefault();
-                        document.getElementById('studentApp').classList.add('hidden');
-                        document.getElementById('instructorApp').classList.remove('hidden');
-                        document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
-                        document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
-                        await loadInstructorDashboard();
-                        await loadInstructorNotifications();
-                        setupInstructorNotificationListener();
-                    });
+                    // Also add "Switch to Dashboard" button in menu
+                    addDashboardSwitchButton();
+
+                } else {
+                    document.getElementById('studentApp').classList.remove('hidden');
+                    document.getElementById('studentUserNameMenu').textContent = user.displayName;
+                    document.getElementById('studentUserAvatarMenu').src = user.photoURL;
+                    await loadInstructors();
+                    await loadCategories();
+                    await loadStudentNotifications();
+                    setupStudentNotificationListener();
                 }
             }
+        } catch (error) {
+            console.error("Error loading user data:", error);
         }
-
-        setTimeout(() => checkPendingRatings(), 2000);
     } else {
         document.getElementById('loginPage').classList.remove('hidden');
         document.getElementById('studentApp').classList.add('hidden');
@@ -174,6 +163,47 @@ onAuthStateChanged(auth, async (user) => {
 
 document.getElementById('studentLogoutBtn').addEventListener('click', () => signOut(auth));
 document.getElementById('instructorLogoutBtn').addEventListener('click', () => signOut(auth));
+
+function addDashboardSwitchButton() {
+    const becomeInstructorBtn = document.querySelector('#studentDropdown .become-instructor-trigger');
+    const profileBtn = document.getElementById('studentMenuProfileBtn');
+
+    if (becomeInstructorBtn && currentUserData && currentUserData.isInstructor) {
+        // Replace "Become Instructor" with "Go to Dashboard"
+        becomeInstructorBtn.innerHTML = '📊 Dashboard';
+        becomeInstructorBtn.classList.remove('become-instructor-trigger');
+
+        // Show profile button for instructors
+        if (profileBtn) {
+            profileBtn.style.display = 'block';
+            profileBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                // Switch to instructor app and show profile
+                document.getElementById('studentApp').classList.add('hidden');
+                document.getElementById('instructorApp').classList.remove('hidden');
+                document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
+                document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
+
+                // Show profile page
+                document.querySelectorAll('#instructorApp .page-content').forEach(p => p.classList.add('hidden'));
+                document.getElementById('instructorProfilePage').classList.remove('hidden');
+                await loadInstructorProfile();
+            });
+        }
+
+        // Add click handler to switch to instructor app
+        becomeInstructorBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            document.getElementById('studentApp').classList.add('hidden');
+            document.getElementById('instructorApp').classList.remove('hidden');
+            document.getElementById('instructorUserNameMenu').textContent = currentUser.displayName;
+            document.getElementById('instructorUserAvatarMenu').src = currentUser.photoURL;
+            await loadInstructorDashboard();
+            await loadInstructorNotifications();
+            setupInstructorNotificationListener();
+        });
+    }
+}
 
 // ==================== MENU LOGIC ====================
 function setupMenu(btnId, menuId) {
